@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Overlay 3 — Split Diagonal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Archivo', sans-serif;
+      user-select: none;
+    }
+    body.test-bg {
+      background: #0b0f19 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" fill="%230b0f19"/><path d="M0 0h80v80H0z" fill="none" stroke="%23171f30" stroke-width="1"/></svg>') repeat !important;
+    }
+
+    .viewport {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    /* Split Diagonal Containers */
+    /* 15 degree angle split seam: clip-path creates the clean diagonal split */
+    .panel-team-a {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1920px;
+      height: 1080px;
+      background: #0047AB;
+      clip-path: polygon(0 0, 100% 0, 0 100%);
+      transform: translateY(0);
+      animation: wipeInTop 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      pointer-events: auto;
+    }
+
+    .panel-team-b {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1920px;
+      height: 1080px;
+      background: #FF6B2C;
+      clip-path: polygon(100% 0, 100% 100%, 0 100%);
+      transform: translateY(0);
+      animation: wipeInBottom 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      pointer-events: auto;
+    }
+
+    /* 6px White Diagonal Seam Line */
+    .seam-line {
+      position: absolute;
+      top: -200px;
+      left: -200px;
+      width: 2600px;
+      height: 6px;
+      background: #FFFFFF;
+      transform: rotate(29.35deg); /* Angle from (0,1080) to (1920,0) is atan(1080/1920) = 29.35deg */
+      transform-origin: top left;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+      z-index: 10;
+      animation: fadeInSeam 700ms ease-out forwards;
+    }
+
+    @keyframes wipeInTop {
+      0% { transform: translateY(-100%); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes wipeInBottom {
+      0% { transform: translateY(100%); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeInSeam {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    /* Exit animation */
+    .viewport.exiting .panel-team-a {
+      transform: translateY(-100%);
+      transition: transform 0.65s cubic-bezier(0.7, 0, 0.84, 0);
+    }
+    .viewport.exiting .panel-team-b {
+      transform: translateY(100%);
+      transition: transform 0.65s cubic-bezier(0.7, 0, 0.84, 0);
+    }
+    .viewport.exiting .center-pill {
+      transform: translate(-50%, -50%) scale(0.8);
+      opacity: 0;
+      transition: all 0.5s ease-in;
+    }
+
+    /* Team A Content: Anchored at x 120, y 140 */
+    .team-a-content {
+      position: absolute;
+      left: 120px;
+      top: 140px;
+      color: #FFFFFF;
+      z-index: 5;
+    }
+    .team-b-content {
+      position: absolute;
+      right: 120px;
+      bottom: 140px;
+      color: #FFFFFF;
+      text-align: right;
+      z-index: 5;
+    }
+
+    /* Giant 180px cropped team codes in background at 40% opacity */
+    .giant-code-bg {
+      position: absolute;
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 180px;
+      line-height: 0.85;
+      text-transform: uppercase;
+      opacity: 0.4;
+      color: #FFFFFF;
+      pointer-events: none;
+    }
+    .team-a-content .giant-code-bg {
+      top: -30px;
+      left: 0;
+    }
+    .team-b-content .giant-code-bg {
+      bottom: -30px;
+      right: 0;
+    }
+
+    .team-full-info {
+      position: relative;
+      z-index: 2;
+    }
+    .team-label-tag {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 8px;
+    }
+    .team-primary-title {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 72px;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .team-code-badge {
+      display: inline-block;
+      margin-top: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      padding: 6px 16px;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: 0.1em;
+    }
+
+    /* Centered Match Title Pill: 520 x 88px centred on the seam with Liquid Glass */
+    .center-pill {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 520px;
+      height: 88px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      color: #0A0A0A;
+      border-radius: 44px;
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.8), inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      animation: popIn 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      pointer-events: auto;
+    }
+
+    @keyframes popIn {
+      0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
+    .pill-status {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #E63946;
+      margin-bottom: 2px;
+    }
+    .pill-title {
+      font-family: 'Archivo', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      color: #0A0A0A;
+      line-height: 1;
+    }
+    .pill-venue {
+      font-size: 12px;
+      color: #666666;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* Floating Countdown bottom-left */
+    .countdown-pill {
+      position: absolute;
+      bottom: 96px;
+      left: 120px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(12px);
+      padding: 10px 24px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #ffffff;
+      z-index: 15;
+    }
+    .countdown-digits {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 24px;
+      color: #FFDE59;
+    }
+
+    /* Test controls */
+    .controls-overlay {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 9999;
+      pointer-events: auto;
+    }
+    .ctrl-btn {
+      background: rgba(0, 0, 0, 0.7);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .panel-team-a, .panel-team-b, .center-pill, .seam-line {
+        animation: none !important;
+        transition: opacity 0.2s ease !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport" id="viewport">
+    <div class="controls-overlay">
+      <button class="ctrl-btn" onclick="toggleTestBg()">Toggle Dark BG (B)</button>
+      <button class="ctrl-btn" style="background: #FFFFFF; color: #000;" onclick="window.goLive()">Trigger Go Live</button>
+    </div>
+
+    <!-- Team A Panel (Top-Left) -->
+    <div class="panel-team-a">
+      <div class="team-a-content">
+        <div class="giant-code-bg" id="teamABigCode">{TEAM_A_CODE}</div>
+        <div class="team-full-info">
+          <div class="team-label-tag">TEAM ONE</div>
+          <div class="team-primary-title" id="teamAName">{TEAM_A_NAME}</div>
+          <div class="team-code-badge" id="teamACode">{TEAM_A_CODE}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team B Panel (Bottom-Right) -->
+    <div class="panel-team-b">
+      <div class="team-b-content">
+        <div class="giant-code-bg" id="teamBBigCode">{TEAM_B_CODE}</div>
+        <div class="team-full-info">
+          <div class="team-label-tag">TEAM TWO</div>
+          <div class="team-primary-title" id="teamBName">{TEAM_B_NAME}</div>
+          <div class="team-code-badge" id="teamBCode">{TEAM_B_CODE}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6px Seam Line -->
+    <div class="seam-line"></div>
+
+    <!-- Centered White Pill (520 x 88px) -->
+    <div class="center-pill">
+      <div class="pill-status" id="liveTag">PRE-MATCH</div>
+      <div class="pill-title" id="matchTitle">{MATCH_TITLE}</div>
+      <div class="pill-venue" id="venueInfo">{VENUE} • {SERIES}</div>
+    </div>
+
+    <!-- Countdown Badge -->
+    <div class="countdown-pill">
+      <span style="font-size: 11px; letter-spacing: 0.15em; font-weight: 700;">MATCH BEGINS</span>
+      <span class="countdown-digits" id="countdownVal">08:30</span>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const data = {
+      teamA: params.get('teamA') || 'SA',
+      teamAName: params.get('teamAName') || 'SOUTH AFRICA',
+      teamB: params.get('teamB') || 'NZ',
+      teamBName: params.get('teamBName') || 'NEW ZEALAND',
+      series: params.get('series') || 'ICC World Tour',
+      matchTitle: params.get('title') || 'MATCH 05',
+      venue: params.get('venue') || 'Eden Park, Auckland',
+      minutes: parseInt(params.get('minutes')) || 8.5
+    };
+
+    document.getElementById('teamAName').textContent = data.teamAName;
+    document.getElementById('teamACode').textContent = data.teamA;
+    document.getElementById('teamABigCode').textContent = data.teamA;
+    document.getElementById('teamBName').textContent = data.teamBName;
+    document.getElementById('teamBCode').textContent = data.teamB;
+    document.getElementById('teamBBigCode').textContent = data.teamB;
+    document.getElementById('matchTitle').textContent = data.matchTitle;
+    document.getElementById('venueInfo').textContent = `${data.venue} • ${data.series}`;
+
+    // Countdown
+    let totalSecs = Math.floor(data.minutes * 60);
+    const cdEl = document.getElementById('countdownVal');
+    setInterval(() => {
+      if (totalSecs <= 0) {
+        cdEl.textContent = '00:00';
+        return;
+      }
+      totalSecs--;
+      const m = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+      const s = String(totalSecs % 60).padStart(2, '0');
+      cdEl.textContent = `${m}:${s}`;
+    }, 1000);
+
+    // goLive() transition
+    window.goLive = function() {
+      const tag = document.getElementById('liveTag');
+      tag.textContent = 'LIVE NOW';
+      tag.style.color = '#0047AB';
+      setTimeout(() => {
+        document.getElementById('viewport').classList.add('exiting');
+      }, 900);
+    };
+
+    function toggleTestBg() {
+      document.body.classList.toggle('test-bg');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'b' || e.key === 'B') toggleTestBg();
+      if (e.key === 'l' || e.key === 'L') window.goLive();
+    });
+  </script>
+</body>
+</html>
+

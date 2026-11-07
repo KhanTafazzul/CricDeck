@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, Save, RotateCcw, Eye, EyeOff, Layout, Type, Palette, Move, Sliders, ArrowLeft } from 'lucide-react';
+import { Upload, Save, RotateCcw, Eye, EyeOff, Layout, Type, Palette, Move, Sliders, ArrowLeft, Tv, Radio, ExternalLink, Copy, Check, Sparkles } from 'lucide-react';
 import { getSupabaseClient, getSupabaseCredentials } from './supabaseClient';
+import { validateImageFile } from './imageUtils';
 
 const DEFAULT_LAYOUT = {
   team_scores: {
@@ -222,6 +223,102 @@ export default function OverlayEditor({ matchState, onBack }) {
   const [saveStatus, setSaveStatus] = useState('');
   const [scale, setScale] = useState(0.5);
 
+  // Pre-Match vs In-Match Overlay Mode
+  const [editorTab, setEditorTab] = useState('in_match'); // 'in_match' or 'pre_match'
+  const [copiedVariant, setCopiedVariant] = useState(null);
+  const [prematchConfig, setPrematchConfig] = useState({
+    teamA: (matchState?.team_a || 'IND').substring(0, 3).toUpperCase(),
+    teamAName: matchState?.team_a || 'India',
+    teamB: (matchState?.team_b || 'AUS').substring(0, 3).toUpperCase(),
+    teamBName: matchState?.team_b || 'Australia',
+    title: matchState?.tournament_id ? 'Tournament Match' : 'ICC Cricket Live',
+    series: 'International Championship',
+    venue: 'National Cricket Stadium',
+    toss: matchState?.toss_winner ? `${matchState.toss_winner} elected to ${matchState.elected_to}` : 'Toss at 14:00 Local',
+    minutes: 15
+  });
+
+  const PRELOAD_VARIANTS = [
+    {
+      id: 1,
+      name: "Broadcast Lower Third",
+      file: "variant1_broadcast_lower_third.html",
+      desc: "Angled skew bars (-12deg) anchored bottom-left (760x120px) with team stripes, countdown, and PRE-MATCH/LIVE status badge.",
+      badge: "#F5B800 / #E63946",
+      type: "Barlow Condensed 800 italic & Inter 500",
+      anim: "Slide In from Left"
+    },
+    {
+      id: 2,
+      name: "Centered Versus Card",
+      file: "variant2_centered_versus_card.html",
+      desc: "Centered 1100x460px high-contrast card with 180px circular logo frames, hairline divider, and accent cyan highlights.",
+      badge: "Gradient #101820 to #1E2D3D",
+      type: "Oswald 700 & 300 / Inter 400",
+      anim: "Scale 0.96 to 1 with Fade-in"
+    },
+    {
+      id: 3,
+      name: "Split Diagonal",
+      file: "variant3_split_diagonal.html",
+      desc: "Full-bleed 15-degree diagonal wipe with 6px white seam, oversized 180px cropped ghost codes, and 520x88px center pill.",
+      badge: "#0047AB / #FF6B2C",
+      type: "Archivo Black 180px & Archivo 600",
+      anim: "Screen Edge Wipes (700ms)"
+    },
+    {
+      id: 4,
+      name: "Top Bar Preview",
+      file: "variant4_top_bar_preview.html",
+      desc: "Full-width architectural top ribbon 1920x140px with warm-gray background, team logo slots, and 4px orange underline.",
+      badge: "#F2F2F0 / #E4572E",
+      type: "Space Grotesk 600 (44px)",
+      anim: "Drop Down (400ms)"
+    },
+    {
+      id: 5,
+      name: "Minimal Vertical Stack",
+      file: "variant5_minimal_vertical_stack.html",
+      desc: "Right-side dark column (x 1300 to 1920) with neon electric-lime border, 80ms staggered typography, and 96px countdown.",
+      badge: "#0A0A0A / #C8FF00",
+      type: "Inter 700 & JetBrains Mono 500",
+      anim: "80ms Staggered Rise"
+    },
+    {
+      id: 6,
+      name: "Floating Glass Pills",
+      file: "variant6_floating_glass_pills.html",
+      desc: "Tri-pill floating dock centered at bottom with 18px backdrop blur, rounded pill geometry, and neon gradient countdown.",
+      badge: "Glassmorphism Blur 18px",
+      type: "Sora 600 & 700 Tabular",
+      anim: "120ms Staggered Rise & Scale"
+    }
+  ];
+
+  const getVariantUrl = (file) => {
+    const q = new URLSearchParams({
+      teamA: prematchConfig.teamA,
+      teamAName: prematchConfig.teamAName,
+      teamB: prematchConfig.teamB,
+      teamBName: prematchConfig.teamBName,
+      title: prematchConfig.title,
+      series: prematchConfig.series,
+      venue: prematchConfig.venue,
+      toss: prematchConfig.toss,
+      minutes: prematchConfig.minutes
+    });
+    return `${window.location.origin}/overlays/${file}?${q.toString()}`;
+  };
+
+  const copyObsUrl = (variant) => {
+    const url = getVariantUrl(variant.file);
+    if (navigator?.clipboard) {
+      navigator.clipboard.writeText(url);
+    }
+    setCopiedVariant(variant.id);
+    setTimeout(() => setCopiedVariant(null), 2500);
+  };
+
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -363,13 +460,20 @@ export default function OverlayEditor({ matchState, onBack }) {
     document.addEventListener('touchend', handleDragEnd);
   };
 
-  // Upload custom background PNG
+  // Upload custom background PNG with security validation
   const handleBgUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setUploading(true);
     setUploadStatus('');
+
+    const validation = validateImageFile(file, 5 * 1024 * 1024);
+    if (!validation.valid) {
+      setUploadStatus(validation.error);
+      setUploading(false);
+      return;
+    }
 
     const supabase = getSupabaseClient();
     const creds = getSupabaseCredentials();
@@ -384,13 +488,17 @@ export default function OverlayEditor({ matchState, onBack }) {
     }
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const rawExt = (file.name.split('.').pop() || 'png').toLowerCase();
+      const fileExt = ['png', 'jpg', 'jpeg', 'webp'].includes(rawExt) ? rawExt : 'png';
       const fileName = `${creds.matchId}_bg_${Date.now()}.${fileExt}`;
       const filePath = `backgrounds/${fileName}`;
 
       const { error } = await supabase.storage
         .from('overlays')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { 
+          upsert: true,
+          contentType: file.type || 'image/png'
+        });
 
       if (error) throw error;
 
@@ -514,15 +622,253 @@ export default function OverlayEditor({ matchState, onBack }) {
       <header className="app-header glass-panel" style={{ flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="brand" onClick={onBack} style={{ cursor: 'pointer' }}>
           <ArrowLeft className="brand-icon" size={24} />
-          <h1>Overlay Designer</h1>
+          <h1>Broadcast Overlays</h1>
         </div>
+
+        {/* Tab switcher: In-Match Designer vs Pre-Match 6 Variants */}
+        <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '8px' }}>
+          <button 
+            type="button"
+            className={`btn ${editorTab === 'in_match' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setEditorTab('in_match')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 14px' }}
+          >
+            <Sliders size={15} /> In-Match Designer
+          </button>
+          <button 
+            type="button"
+            className={`btn ${editorTab === 'pre_match' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setEditorTab('pre_match')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 14px' }}
+          >
+            <Sparkles size={15} /> 6 ICC Pre-Match Overlays
+          </button>
+        </div>
+
         <div className="header-actions">
+          <a 
+            href="/overlays/index.html" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="btn btn-secondary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+          >
+            <ExternalLink size={14} /> Open OBS Hub
+          </a>
           <button className="btn btn-secondary" onClick={onBack}>
             Back to Dashboard
           </button>
         </div>
       </header>
 
+      {editorTab === 'pre_match' ? (
+        <div style={{
+          flexGrow: 1,
+          overflowY: 'auto',
+          padding: '32px',
+          background: 'radial-gradient(ellipse at top, #0d1527 0%, #060a12 100%)',
+          color: '#F8FAFC'
+        }}>
+          <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
+            {/* Header info */}
+            <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#00FF88', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '6px' }}>
+                  <Tv size={14} /> ICC Broadcast Standards (1920 x 1080)
+                </div>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>
+                  Pre-Match Ready Screens
+                </h2>
+                <p style={{ color: '#94A3B8', fontSize: '0.9rem', marginTop: '4px', maxWidth: '650px' }}>
+                  6 distinct, high-end pre-game overlays with zero clutter, bold typography, transparent stadium backings, entrance animations, and instant <code>goLive()</code> triggers.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <a 
+                  href="/overlays/index.html" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <ExternalLink size={16} /> Launch All Standalone Overlays
+                </a>
+              </div>
+            </div>
+
+            {/* Quick Param Customizer */}
+            <div className="glass-panel" style={{ padding: '20px 24px', borderRadius: '12px', marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#00FF88' }}>
+                <Sliders size={16} /> Live Overlay Dynamic Placeholders
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginBottom: '4px' }}>Team A Code & Name</label>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      style={{ width: '70px', textTransform: 'uppercase', fontWeight: 'bold' }} 
+                      value={prematchConfig.teamA} 
+                      onChange={e => setPrematchConfig({ ...prematchConfig, teamA: e.target.value.toUpperCase() })} 
+                    />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      value={prematchConfig.teamAName} 
+                      onChange={e => setPrematchConfig({ ...prematchConfig, teamAName: e.target.value })} 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginBottom: '4px' }}>Team B Code & Name</label>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      style={{ width: '70px', textTransform: 'uppercase', fontWeight: 'bold' }} 
+                      value={prematchConfig.teamB} 
+                      onChange={e => setPrematchConfig({ ...prematchConfig, teamB: e.target.value.toUpperCase() })} 
+                    />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      value={prematchConfig.teamBName} 
+                      onChange={e => setPrematchConfig({ ...prematchConfig, teamBName: e.target.value })} 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginBottom: '4px' }}>Match Title & Series</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={prematchConfig.title} 
+                    onChange={e => setPrematchConfig({ ...prematchConfig, title: e.target.value })} 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginBottom: '4px' }}>Venue</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={prematchConfig.venue} 
+                    onChange={e => setPrematchConfig({ ...prematchConfig, venue: e.target.value })} 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginBottom: '4px' }}>Countdown (Mins)</label>
+                  <input 
+                    type="number" 
+                    className="form-control" 
+                    value={prematchConfig.minutes} 
+                    onChange={e => setPrematchConfig({ ...prematchConfig, minutes: parseInt(e.target.value) || 1 })} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Grid of 6 Preload Overlays */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
+              {PRELOAD_VARIANTS.map(variant => (
+                <div 
+                  key={variant.id} 
+                  className="glass-panel" 
+                  style={{ 
+                    padding: '24px', 
+                    borderRadius: '14px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#00FF88', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                        VARIANT {variant.id}
+                      </span>
+                      <span style={{ 
+                        fontSize: '0.7rem', 
+                        padding: '2px 8px', 
+                        borderRadius: '4px', 
+                        background: 'rgba(255,255,255,0.06)',
+                        fontFamily: 'monospace',
+                        color: '#CBD5E1'
+                      }}>
+                        {variant.anim}
+                      </span>
+                    </div>
+
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 8px 0', color: '#FFFFFF' }}>
+                      {variant.name}
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: '#94A3B8', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+                      {variant.desc}
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '20px' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                        Typography: <strong style={{ color: '#E2E8F0' }}>{variant.type}</strong>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                        Palette: <strong style={{ color: '#E2E8F0' }}>{variant.badge}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <a 
+                      href={getVariantUrl(variant.file)} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="btn btn-primary"
+                      style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none' }}
+                    >
+                      <ExternalLink size={14} /> Fullscreen
+                    </a>
+                    <button 
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => copyObsUrl(variant)}
+                      style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      {copiedVariant === variant.id ? (
+                        <>
+                          <Check size={14} style={{ color: '#00FF88' }} /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} /> Copy OBS URL
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* OBS Guide */}
+            <div style={{
+              marginTop: '40px',
+              padding: '20px 24px',
+              background: 'rgba(0, 255, 136, 0.05)',
+              border: '1px solid rgba(0, 255, 136, 0.2)',
+              borderRadius: '12px',
+              fontSize: '0.85rem',
+              color: '#CBD5E1',
+              lineHeight: 1.6
+            }}>
+              <strong style={{ color: '#00FF88' }}>🎥 How to use with OBS Studio:</strong> Add a <strong>Browser Source</strong> in OBS, set Width: <code>1920</code>, Height: <code>1080</code>, check <em>"Shutdown source when not visible"</em>, and paste the copied URL. Inside each overlay, press <strong>'B'</strong> to toggle a dark test checkerboard background, and press <strong>'L'</strong> to test the <code>goLive()</code> exit transition.
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="overlay-editor-layout" style={{ flexGrow: 1, overflow: 'hidden' }}>
         {/* Settings Pane */}
         <div className="settings-pane glass-panel">
@@ -887,7 +1233,8 @@ export default function OverlayEditor({ matchState, onBack }) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Overlay 6 — Floating Glass Pills</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Sora', sans-serif;
+      user-select: none;
+    }
+    body.test-bg {
+      background: #080b11 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" fill="%23080b11"/><path d="M0 0h80v80H0z" fill="none" stroke="%23121927" stroke-width="1"/></svg>') repeat !important;
+    }
+
+    .viewport {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      pointer-events: none;
+    }
+
+    /* Floating Row: Centred at bottom, 96px from bottom edge */
+    .pills-container {
+      position: absolute;
+      bottom: 96px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      pointer-events: auto;
+    }
+
+    .pills-container.exiting .glass-pill {
+      transform: translateY(120px) scale(0.9);
+      opacity: 0;
+      transition: all 500ms cubic-bezier(0.7, 0, 0.84, 0);
+    }
+
+    /* Glass Pill Base: 96px high, fully rounded (border-radius: 48px) */
+    .glass-pill {
+      height: 96px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%), rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(24px) saturate(200%);
+      -webkit-backdrop-filter: blur(24px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 48px;
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 0 0 30px rgba(124, 92, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      color: #FFFFFF;
+      opacity: 0;
+      transform: translateY(40px) scale(0.94);
+      animation: riseScaleIn 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pill-team-a {
+      padding: 0 36px 0 16px;
+      animation-delay: 0ms;
+    }
+    .pill-countdown {
+      padding: 0 40px;
+      animation-delay: 120ms;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 300px;
+      text-align: center;
+    }
+    .pill-team-b {
+      padding: 0 16px 0 36px;
+      animation-delay: 240ms;
+      flex-direction: row-reverse;
+    }
+
+    @keyframes riseScaleIn {
+      0% {
+        opacity: 0;
+        transform: translateY(40px) scale(0.94);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Team Content */
+    .team-avatar {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 22px;
+      color: #FFFFFF;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .team-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .team-meta {
+      display: flex;
+      flex-direction: column;
+      margin: 0 20px;
+    }
+    .team-title {
+      font-size: 32px;
+      font-weight: 600;
+      line-height: 1;
+      color: #FFFFFF;
+      letter-spacing: -0.01em;
+    }
+    .team-subcode {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      color: #7C5CFF;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .pill-team-b .team-meta {
+      text-align: right;
+    }
+    .pill-team-b .team-subcode {
+      color: #22D3EE;
+    }
+
+    /* Countdown Pill Content */
+    .countdown-caption {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 2px;
+    }
+    .countdown-digits {
+      font-size: 56px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      background: linear-gradient(135deg, #7C5CFF 0%, #22D3EE 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    /* Floating Match Info Above */
+    .floating-match-card {
+      position: absolute;
+      bottom: 210px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 24px;
+      border-radius: 20px;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      pointer-events: auto;
+    }
+    .status-dot-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #22D3EE;
+      font-weight: 700;
+    }
+    .status-dot-tag::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22D3EE;
+      box-shadow: 0 0 8px #22D3EE;
+    }
+    .status-dot-tag.live-mode {
+      color: #E63946;
+    }
+    .status-dot-tag.live-mode::before {
+      background: #E63946;
+      box-shadow: 0 0 8px #E63946;
+    }
+
+    /* Test controls */
+    .controls-overlay {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      display: flex;
+      gap: 10px;
+      z-index: 9999;
+      pointer-events: auto;
+    }
+    .ctrl-btn {
+      background: rgba(0, 0, 0, 0.75);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .glass-pill {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <div class="controls-overlay">
+      <button class="ctrl-btn" onclick="toggleTestBg()">Toggle Dark BG (B)</button>
+      <button class="ctrl-btn" style="background: linear-gradient(135deg, #7C5CFF, #22D3EE); color: #000;" onclick="window.goLive()">Trigger Go Live</button>
+    </div>
+
+    <!-- Match Information Card floating above -->
+    <div class="floating-match-card" id="matchCard">
+      <span class="status-dot-tag" id="liveTag">PRE-MATCH</span>
+      <span>•</span>
+      <span id="matchInfo">{MATCH_TITLE} — {SERIES}</span>
+      <span>•</span>
+      <span id="venueInfo" style="color: rgba(255,255,255,0.7);">{VENUE}</span>
+    </div>
+
+    <!-- Three Glass Pills Centered at Bottom (96px from bottom edge) -->
+    <div class="pills-container" id="pillsContainer">
+      <!-- Left Pill: Team A -->
+      <div class="glass-pill pill-team-a">
+        <div class="team-avatar" id="teamAFallback">{TEAM_A_CODE}</div>
+        <div class="team-meta">
+          <span class="team-title" id="teamAName">{TEAM_A_NAME}</span>
+          <span class="team-subcode" id="teamACode">{TEAM_A_CODE}</span>
+        </div>
+      </div>
+
+      <!-- Centre Pill: Countdown -->
+      <div class="glass-pill pill-countdown">
+        <span class="countdown-caption">STARTS IN</span>
+        <span class="countdown-digits" id="countdownVal">09:15</span>
+      </div>
+
+      <!-- Right Pill: Team B -->
+      <div class="glass-pill pill-team-b">
+        <div class="team-avatar" id="teamBFallback">{TEAM_B_CODE}</div>
+        <div class="team-meta">
+          <span class="team-title" id="teamBName">{TEAM_B_NAME}</span>
+          <span class="team-subcode" id="teamBCode">{TEAM_B_CODE}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const data = {
+      teamA: params.get('teamA') || 'CSK',
+      teamAName: params.get('teamAName') || 'Chennai',
+      teamB: params.get('teamB') || 'MI',
+      teamBName: params.get('teamBName') || 'Mumbai',
+      series: params.get('series') || 'Premier League 2026',
+      matchTitle: params.get('title') || 'Finals Blockbuster',
+      venue: params.get('venue') || 'Chepauk Stadium, Chennai',
+      minutes: parseFloat(params.get('minutes')) || 9.25
+    };
+
+    document.getElementById('teamAName').textContent = data.teamAName;
+    document.getElementById('teamACode').textContent = data.teamA;
+    document.getElementById('teamAFallback').textContent = data.teamA;
+    document.getElementById('teamBName').textContent = data.teamBName;
+    document.getElementById('teamBCode').textContent = data.teamB;
+    document.getElementById('teamBFallback').textContent = data.teamB;
+    document.getElementById('matchInfo').textContent = `${data.matchTitle} — ${data.series}`;
+    document.getElementById('venueInfo').textContent = data.venue;
+
+    // Countdown
+    let totalSecs = Math.floor(data.minutes * 60);
+    const cdEl = document.getElementById('countdownVal');
+    setInterval(() => {
+      if (totalSecs <= 0) {
+        cdEl.textContent = '00:00';
+        return;
+      }
+      totalSecs--;
+      const m = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+      const s = String(totalSecs % 60).padStart(2, '0');
+      cdEl.textContent = `${m}:${s}`;
+    }, 1000);
+
+    // goLive() transition
+    window.goLive = function() {
+      const container = document.getElementById('pillsContainer');
+      const card = document.getElementById('matchCard');
+      const tag = document.getElementById('liveTag');
+      tag.textContent = 'LIVE NOW';
+      tag.classList.add('live-mode');
+      if (card) {
+        card.style.background = 'rgba(230, 57, 70, 0.4)';
+        card.style.borderColor = '#E63946';
+      }
+      setTimeout(() => {
+        container.classList.add('exiting');
+        if (card) {
+          card.style.opacity = '0';
+          card.style.transform = 'translateX(-50%) translateY(20px)';
+          card.style.transition = 'all 0.4s ease';
+        }
+      }, 900);
+    };
+
+    function toggleTestBg() {
+      document.body.classList.toggle('test-bg');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'b' || e.key === 'B') toggleTestBg();
+      if (e.key === 'l' || e.key === 'L') window.goLive();
+    });
+  </script>
+</body>
+</html>
+

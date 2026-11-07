@@ -4,9 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CricDeck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:ital,wght@1,800&family=Oswald:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+    <title>CricDeck — Professional Live Cricket Scoring & ICC Broadcast Engine</title>
   </head>
   <body>
+    <!-- Hidden SVG Filter for Liquid Glass Refraction Effect -->
+    <svg width="0" height="0" style="position: absolute; pointer-events: none; opacity: 0;" aria-hidden="true">
+      <defs>
+        <filter id="liquid-glass-lens" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.015" numOctaves="2" seed="5" result="liquidNoise">
+            <animate attributeName="baseFrequency" dur="16s" values="0.012 0.015; 0.016 0.010; 0.012 0.015" repeatCount="indefinite" />
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="liquidNoise" scale="14" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CricDeck — 6 Pre-Match Broadcast Overlays (ICC Standards)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #0B0F19;
+      color: #F8FAFC;
+      font-family: 'Inter', sans-serif;
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 24px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand-tag {
+      background: rgba(0, 255, 136, 0.15);
+      border: 1px solid #00FF88;
+      color: #00FF88;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 12px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    @keyframes gridEnter {
+      0% { opacity: 0; transform: translateY(20px) scale(0.97); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .grid > *:nth-child(1) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
+    .grid > *:nth-child(2) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
+    .grid > *:nth-child(3) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.19s both; }
+    .grid > *:nth-child(4) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.26s both; }
+    .grid > *:nth-child(5) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.33s both; }
+    .grid > *:nth-child(6) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.40s both; }
+
+    .card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%), rgba(16, 24, 40, 0.75);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 16px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.35s;
+    }
+    .card:hover {
+      transform: translateY(-6px) scale(1.01);
+      border-color: rgba(34, 197, 94, 0.45);
+      box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.75), 0 0 24px rgba(34, 197, 94, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+    .card-top {
+      margin-bottom: 20px;
+    }
+    .card-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: #00FF88;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #FFFFFF;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #94A3B8;
+      line-height: 1.5;
+    }
+    .card-specs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 14px;
+    }
+    .spec-pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #CBD5E1;
+      font-family: monospace;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #00FF88;
+      color: #0B0F19;
+      border: none;
+    }
+    .btn-primary:hover {
+      background: #00dd75;
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+    .obs-hint {
+      max-width: 1200px;
+      margin: 40px auto 0;
+      background: rgba(0, 255, 136, 0.05);
+      border: 1px solid rgba(0, 255, 136, 0.2);
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-size: 13px;
+      color: #CBD5E1;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <h1>🏏 CricDeck Broadcast Overlays</h1>
+      <span class="brand-tag">ICC Polish Pre-Match Pack</span>
+    </div>
+    <a href="/" class="btn btn-secondary">← Back to CricDeck App</a>
+  </div>
+
+  <div class="grid">
+    <!-- Variant 1 -->
+    <div class="card">
+      <div class="card-top">
+        <div class="card-num">Variant 1</div>
+        <div class="card-title">Broadcast Lower Third</div>
+        <div class="card-desc">
+          Angled skew bars (-12deg) anchored bottom-left (760x120px) with team stripes, countdown, and PRE-MATCH/LIVE status badge.
+        </div>
+        <div class="card-specs">
+          <span class="spec-pill">Barlow Condensed 800</span>
+          <span class="spec-pill">Inter 500</span>
+          <span class="spec-pill">#0B1A33 / #F5B800 / #E63946</span>
+          <span class="spec-pill">Slide In Left</span>
+        </div>
+      </div>
+      <div class="actions">
+        <a href="/overlays/variant1_broadcast_lower_third.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <button class="btn btn-secondary" onclick="copyObsUrl('variant1_broadcast_lower_third.html')">Copy OBS URL</button>
+      </div>
+    </div>
+
+    <!-- Variant 2 -->
+    <div class="card">
+      <div class="card-top">
+        <div class="card-num">Variant 2</div>
+        <div class="card-title">Centered Versus Card</div>
+        <div class="card-desc">
+          Centered 1100x460px high-contrast card with 180px circular logo frames, hairline divider, accent cyan highlights, and bottom venue/date.
+        </div>
+        <div class="card-specs">
+          <span class="spec-pill">Oswald 700 & 300</span>
+          <span class="spec-pill">Inter 400</span>
+          <span class="spec-pill">#101820 to #1E2D3D</span>
+          <span class="spec-pill">Scale Fade In</span>
+        </div>
+      </div>
+      <div class="actions">
+        <a href="/overlays/variant2_centered_versus_card.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <button class="btn btn-secondary" onclick="copyObsUrl('variant2_centered_versus_card.html')">Copy OBS URL</button>
+      </div>
+    </div>
+
+    <!-- Variant 3 -->
+    <div class="card">
+      <div class="card-top">
+        <div class="card-num">Variant 3</div>
+        <div class="card-title">Split Diagonal</div>
+        <div class="card-desc">
+          Full-bleed 15-degree diagonal wipe with 6px white seam, oversized 180px cropped ghost codes, and a floating 520x88px white center pill.
+        </div>
+        <div class="card-specs">
+          <span class="spec-pill">Archivo Black 180px</span>
+          <span class="spec-pill">Archivo 600</span>
+          <span class="spec-pill">#0047AB / #FF6B2C</span>
+          <span class="spec-pill">Dual Wipe 700ms</span>
+        </div>
+      </div>
+      <div class="actions">
+        <a href="/overlays/variant3_split_diagonal.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <button class="btn btn-secondary" onclick="copyObsUrl('variant3_split_diagonal.html')">Copy OBS URL</button>
+      </div>
+    </div>
+
+    <!-- Variant 4 -->
+    <div class="card">
+      <div class="card-top">
+        <div class="card-num">Variant 4</div>
+        <div class="card-title">Top Bar Preview</div>
+        <div class="card-desc">
+          Full-width architectural top ribbon 1920x140px with crisp warm-gray background, team logo slots, toss info center, and 4px orange underline.
+        </div>
+        <div class="card-specs">
+          <span class="spec-pill">Space Grotesk 600</span>
+          <span class="spec-pill">16px Uppercase</span>
+          <span class="spec-pill">#F2F2F0 / #E4572E</span>
+          <span class="spec-pill">Drop Down 400ms</span>
+        </div>
+      </div>
+      <div class="actions">
+        <a href="/overlays/variant4_top_bar_preview.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <button class="btn btn-secondary" onclick="copyObsUrl('variant4_top_bar_preview.html')">Copy OBS URL</button>
+      </div>
+    </div>
+
+    <!-- Variant 5 -->
+    <div class="card">
+      <div class="card-top">
+        <div class="card-num">Variant 5</div>
+        <div class="card-title">Minimal Vertical Stack</div>
+        <div class="card-desc">
+          Clean right-side dark column (x 1300 to 1920) with neon electric-lime border, 80ms staggered fade-up typography, and 96px countdown.
+        </div>
+        <div class="card-specs">
+          <span class="spec-pill">Inter 700 & 500</span>
+          <span class="spec-pill">JetBrains Mono 500</span>
+          <span class="spec-pill">#0A0A0A / #C8FF00</span>
+          <span class="spec-pill">80ms Staggered Rise</span>
+        </div>
+      </div>
+      <div class="actions">
+        <a href="/overlays/variant5_minimal_vertical_stack.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <button class="btn btn-secondary" onclick="copyObsUrl('variant5_minimal_vertical_stack.html')">Copy OBS URL</button>
+      </div>
+    </div>
+
+    <!-- Variant 6 -->
+    <div class="card">
+      <div class="card-top">
+        <div class="card-num">Variant 6</div>
+        <div class="card-title">Floating Glass Pills</div>
+        <div class="card-desc">
+          Tri-pill floating dock centered at bottom with 18px backdrop blur, rounded pill geometry, team circular avatars, and neon gradient countdown.
+        </div>
+        <div class="card-specs">
+          <span class="spec-pill">Sora 600 & 700</span>
+          <span class="spec-pill">Glassmorphism Blur 18px</span>
+          <span class="spec-pill">#7C5CFF to #22D3EE</span>
+          <span class="spec-pill">120ms Staggered Rise</span>
+        </div>
+      </div>
+      <div class="actions">
+        <a href="/overlays/variant6_floating_glass_pills.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <button class="btn btn-secondary" onclick="copyObsUrl('variant6_floating_glass_pills.html')">Copy OBS URL</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="obs-hint">
+    <strong>💡 OBS Studio Setup:</strong> In OBS, click <em>Sources (+) → Browser</em>, set Width: <code>1920</code>, Height: <code>1080</code>, check <em>Shutdown source when not visible</em>. Paste any overlay URL. Press <strong>'B'</strong> in any overlay window to toggle dark test mode; press <strong>'L'</strong> or click <em>Trigger Go Live</em> to test the smooth transition into match play.
+  </div>
+
+  <script>
+    function copyObsUrl(file) {
+      const url = window.location.origin + '/overlays/' + file;
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Copied OBS Browser Source URL to clipboard:\n' + url);
+      });
+    }
+  </script>
+</body>
+</html>
+

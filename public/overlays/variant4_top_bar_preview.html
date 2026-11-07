@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Overlay 4 — Top Bar Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Space Grotesk', sans-serif;
+      user-select: none;
+    }
+    body.test-bg {
+      background: #0f172a url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" fill="%230f172a"/><path d="M0 0h80v80H0z" fill="none" stroke="%231e293b" stroke-width="1"/></svg>') repeat !important;
+    }
+
+    .viewport {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      pointer-events: none;
+    }
+
+    /* Full-width Top Bar: 1920 x 140px with Liquid Glass finish */
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1920px;
+      height: 140px;
+      background: rgba(242, 242, 240, 0.92);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      color: #111111;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 96px; /* 96px safe margin */
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), inset 0 -1px 0 rgba(255, 255, 255, 0.6);
+      border-bottom: 4px solid #E4572E; /* Accent underline 4px */
+      transform: translateY(0);
+      animation: dropDown 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      pointer-events: auto;
+    }
+
+    .top-bar.exiting {
+      transform: translateY(-100%);
+      transition: transform 400ms cubic-bezier(0.7, 0, 0.84, 0);
+    }
+
+    @keyframes dropDown {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(0); }
+    }
+
+    /* Team Blocks */
+    .team-block {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      min-width: 420px;
+    }
+    .team-block.team-b {
+      flex-direction: row-reverse;
+      text-align: right;
+    }
+
+    /* 160px Square Logo Slot with Fallback (scaled to fit 100px inside 140px bar) */
+    .logo-slot {
+      width: 100px;
+      height: 100px;
+      background: #E5E5E3;
+      border: 2px solid #D1D1CE;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .logo-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .logo-fallback {
+      font-size: 32px;
+      font-weight: 700;
+      color: #E4572E;
+    }
+
+    .team-meta {
+      display: flex;
+      flex-direction: column;
+    }
+    .team-code {
+      font-size: 44px;
+      font-weight: 700;
+      color: #111111;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .team-name {
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: #666666;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* Centre Block: VS with {TOSS_INFO} beneath */
+    .center-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .status-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: #111111;
+      color: #FFFFFF;
+      padding: 3px 12px;
+      border-radius: 12px;
+      margin-bottom: 4px;
+      transition: all 0.3s ease;
+    }
+    .status-tag.live-mode {
+      background: #E4572E;
+      color: #FFFFFF;
+    }
+    .vs-text {
+      font-size: 38px;
+      font-weight: 700;
+      color: #E4572E;
+      line-height: 1;
+      letter-spacing: 0.05em;
+    }
+    .toss-info {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #444444;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .match-subtext {
+      font-size: 12px;
+      color: #888888;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* Countdown Pill floating top right or corner */
+    .countdown-widget {
+      position: absolute;
+      top: 160px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(17, 17, 17, 0.85);
+      backdrop-filter: blur(12px);
+      color: #FFFFFF;
+      padding: 8px 24px;
+      border-radius: 20px;
+      font-size: 14px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      pointer-events: auto;
+    }
+    .countdown-timer {
+      font-weight: 700;
+      color: #E4572E;
+      font-size: 18px;
+    }
+
+    /* Test controls */
+    .controls-overlay {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      display: flex;
+      gap: 10px;
+      z-index: 9999;
+      pointer-events: auto;
+    }
+    .ctrl-btn {
+      background: rgba(0, 0, 0, 0.75);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .top-bar {
+        animation: none !important;
+        transition: opacity 0.2s ease !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <div class="controls-overlay">
+      <button class="ctrl-btn" onclick="toggleTestBg()">Toggle Dark BG (B)</button>
+      <button class="ctrl-btn" style="background: #E4572E;" onclick="window.goLive()">Trigger Go Live</button>
+    </div>
+
+    <!-- Top Bar (1920 x 140px) -->
+    <div class="top-bar" id="mainTopBar">
+      <!-- Left: Team A -->
+      <div class="team-block team-a">
+        <div class="logo-slot" id="teamALogoSlot">
+          <span class="logo-fallback" id="teamAFallback">{TEAM_A_CODE}</span>
+        </div>
+        <div class="team-meta">
+          <span class="team-code" id="teamACode">{TEAM_A_CODE}</span>
+          <span class="team-name" id="teamAName">{TEAM_A_NAME}</span>
+        </div>
+      </div>
+
+      <!-- Centre: Status, VS, Toss Info -->
+      <div class="center-block">
+        <span class="status-tag" id="liveTag">PRE-MATCH</span>
+        <span class="vs-text">VS</span>
+        <span class="toss-info" id="tossInfo">{TOSS_INFO}</span>
+        <span class="match-subtext" id="venueInfo">{VENUE} • {SERIES}</span>
+      </div>
+
+      <!-- Right: Team B -->
+      <div class="team-block team-b">
+        <div class="logo-slot" id="teamBLogoSlot">
+          <span class="logo-fallback" id="teamBFallback">{TEAM_B_CODE}</span>
+        </div>
+        <div class="team-meta">
+          <span class="team-code" id="teamBCode">{TEAM_B_CODE}</span>
+          <span class="team-name" id="teamBName">{TEAM_B_NAME}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Countdown Widget -->
+    <div class="countdown-widget" id="cdWidget">
+      <span>STARTS IN</span>
+      <span class="countdown-timer" id="countdownVal">12:00</span>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const data = {
+      teamA: params.get('teamA') || 'PAK',
+      teamAName: params.get('teamAName') || 'PAKISTAN',
+      teamB: params.get('teamB') || 'SL',
+      teamBName: params.get('teamBName') || 'SRI LANKA',
+      series: params.get('series') || 'Asia Cup 2026',
+      venue: params.get('venue') || 'R. Premadasa Stadium, Colombo',
+      tossInfo: params.get('toss') || 'PAKISTAN WON THE TOSS & ELECTED TO BAT',
+      minutes: parseInt(params.get('minutes')) || 12
+    };
+
+    document.getElementById('teamACode').textContent = data.teamA;
+    document.getElementById('teamAFallback').textContent = data.teamA;
+    document.getElementById('teamAName').textContent = data.teamAName;
+    document.getElementById('teamBCode').textContent = data.teamB;
+    document.getElementById('teamBFallback').textContent = data.teamB;
+    document.getElementById('teamBName').textContent = data.teamBName;
+    document.getElementById('tossInfo').textContent = data.tossInfo;
+    document.getElementById('venueInfo').textContent = `${data.venue} • ${data.series}`;
+
+    // Countdown
+    let totalSecs = data.minutes * 60;
+    const cdEl = document.getElementById('countdownVal');
+    setInterval(() => {
+      if (totalSecs <= 0) {
+        cdEl.textContent = '00:00';
+        return;
+      }
+      totalSecs--;
+      const m = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+      const s = String(totalSecs % 60).padStart(2, '0');
+      cdEl.textContent = `${m}:${s}`;
+    }, 1000);
+
+    // goLive() transition
+    window.goLive = function() {
+      const bar = document.getElementById('mainTopBar');
+      const cd = document.getElementById('cdWidget');
+      const tag = document.getElementById('liveTag');
+      tag.textContent = 'LIVE';
+      tag.classList.add('live-mode');
+      if (cd) cd.style.opacity = '0';
+      setTimeout(() => {
+        bar.classList.add('exiting');
+      }, 900);
+    };
+
+    function toggleTestBg() {
+      document.body.classList.toggle('test-bg');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'b' || e.key === 'B') toggleTestBg();
+      if (e.key === 'l' || e.key === 'L') window.goLive();
+    });
+  </script>
+</body>
+</html>
+

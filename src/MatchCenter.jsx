@@ -27,13 +27,18 @@ export default function MatchCenter() {
       }
     }
 
-    // 2. Set up local BroadcastChannel listener for real-time offline sync
+    // 2. Set up local BroadcastChannel listener for real-time offline sync with validation
     const localChannel = new BroadcastChannel('cricdeck_sync');
     localChannel.onmessage = (event) => {
-      console.log('MatchCenter: Received local message:', event.data);
-      if (event.data && event.data.type === 'match_update') {
-        setMatchState(event.data.state);
-        setConnectionStatus('Local Sync Active (Offline)');
+      if (event.data && typeof event.data === 'object' && event.data.type === 'match_update') {
+        const state = event.data.state;
+        if (state && typeof state === 'object') {
+          // If viewing specific matchId, reject mismatches
+          if (!urlMatchId || !state.id || state.id === urlMatchId) {
+            setMatchState(state);
+            setConnectionStatus('Local Sync Active (Offline)');
+          }
+        }
       }
     };
 

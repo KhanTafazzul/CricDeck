@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Overlay 2 — Centered Versus Card</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Oswald:wght@300;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+    body.test-bg {
+      background: #090e15 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" fill="%23090e15"/><path d="M0 0h80v80H0z" fill="none" stroke="%23141e2b" stroke-width="1"/></svg>') repeat !important;
+    }
+
+    .viewport {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    /* Centered Versus Card: 1100 x 460px */
+    .vs-card {
+      position: relative;
+      width: 1100px;
+      height: 460px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%), rgba(16, 24, 32, 0.82);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 20px;
+      box-shadow: 0 35px 75px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 194, 168, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+      padding: 40px 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #F4F7FA;
+      animation: scaleFadeIn 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      pointer-events: auto;
+      overflow: hidden;
+    }
+
+    .vs-card.exiting {
+      transform: scale(0.92);
+      opacity: 0;
+      transition: transform 0.6s cubic-bezier(0.7, 0, 0.84, 0), opacity 0.5s ease-in;
+    }
+
+    @keyframes scaleFadeIn {
+      0% {
+        transform: scale(0.96);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Status Tag */
+    .status-badge {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 194, 168, 0.15);
+      border: 1px solid #00C2A8;
+      color: #00C2A8;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 4px 16px;
+      border-radius: 20px;
+      transition: all 0.3s ease;
+    }
+    .status-badge.live-mode {
+      background: #E63946;
+      border-color: #E63946;
+      color: #FFFFFF;
+      animation: pulseLive 1.5s infinite;
+    }
+    @keyframes pulseLive {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    /* Top Metadata */
+    .match-header {
+      text-align: center;
+      margin-top: 16px;
+    }
+    .series-name {
+      font-size: 16px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #00C2A8;
+      font-weight: 600;
+    }
+    .match-title {
+      font-size: 20px;
+      color: #9FB3C8;
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    /* Team Versus Section */
+    .vs-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+
+    .team-box {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex: 1;
+    }
+    .team-box.team-b {
+      flex-direction: row-reverse;
+      text-align: right;
+    }
+
+    /* 180px circle logos with fallback */
+    .logo-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    .logo-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .logo-fallback {
+      font-family: 'Oswald', sans-serif;
+      font-size: 42px;
+      font-weight: 700;
+      color: #00C2A8;
+    }
+
+    .team-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .team-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 64px;
+      font-weight: 700;
+      text-transform: uppercase;
+      line-height: 1;
+      color: #F4F7FA;
+    }
+    .team-code {
+      font-size: 18px;
+      color: #00C2A8;
+      letter-spacing: 0.16em;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    /* Center VS */
+    .vs-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 40px;
+    }
+    .vs-text {
+      font-family: 'Oswald', sans-serif;
+      font-size: 64px;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      color: rgba(255, 255, 255, 0.4);
+      padding-left: 0.3em; /* offsets letter-spacing */
+    }
+
+    /* Hairline Divider */
+    .hairline-divider {
+      width: 100%;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.12);
+      margin: 10px 0;
+    }
+
+    /* Bottom Venue & Time */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #9FB3C8;
+    }
+    .venue-info {
+      font-size: 18px;
+      font-weight: 400;
+    }
+    .toss-info {
+      font-size: 16px;
+      color: #00C2A8;
+      font-weight: 500;
+    }
+    .time-countdown {
+      font-size: 20px;
+      font-weight: 600;
+      color: #F4F7FA;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Test controls */
+    .controls-overlay {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 9999;
+      pointer-events: auto;
+    }
+    .ctrl-btn {
+      background: rgba(0, 0, 0, 0.7);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .vs-card {
+        animation: none !important;
+        transition: opacity 0.2s ease !important;
+      }
+      .status-badge.live-mode {
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <div class="controls-overlay">
+      <button class="ctrl-btn" onclick="toggleTestBg()">Toggle Dark BG (B)</button>
+      <button class="ctrl-btn" style="background: #00C2A8; color: #000;" onclick="window.goLive()">Trigger Go Live</button>
+    </div>
+
+    <!-- Centered Card -->
+    <div class="vs-card" id="mainCard">
+      <div class="status-badge" id="statusBadge">PRE-MATCH</div>
+
+      <!-- Header -->
+      <div class="match-header">
+        <div class="series-name" id="seriesName">{SERIES}</div>
+        <div class="match-title" id="matchTitle">{MATCH_TITLE}</div>
+      </div>
+
+      <!-- Versus section -->
+      <div class="vs-section">
+        <!-- Team A -->
+        <div class="team-box team-a">
+          <div class="logo-circle" id="teamALogoBox">
+            <span class="logo-fallback" id="teamAFallback">{TEAM_A_CODE}</span>
+          </div>
+          <div class="team-info">
+            <span class="team-name" id="teamAName">{TEAM_A_NAME}</span>
+            <span class="team-code" id="teamACode">{TEAM_A_CODE}</span>
+          </div>
+        </div>
+
+        <!-- Center VS -->
+        <div class="vs-center">
+          <span class="vs-text">VS</span>
+        </div>
+
+        <!-- Team B -->
+        <div class="team-box team-b">
+          <div class="logo-circle" id="teamBLogoBox">
+            <span class="logo-fallback" id="teamBFallback">{TEAM_B_CODE}</span>
+          </div>
+          <div class="team-info">
+            <span class="team-name" id="teamBName">{TEAM_B_NAME}</span>
+            <span class="team-code" id="teamBCode">{TEAM_B_CODE}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="hairline-divider"></div>
+
+      <!-- Footer -->
+      <div class="card-footer">
+        <div class="venue-info" id="venueInfo">{VENUE}</div>
+        <div class="toss-info" id="tossInfo">{TOSS_INFO}</div>
+        <div class="time-countdown">
+          <span>STARTS IN:</span>
+          <span style="color: #00C2A8; font-weight: 700;" id="countdownVal">10:00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const data = {
+      teamA: params.get('teamA') || 'IND',
+      teamAName: params.get('teamAName') || 'INDIA',
+      teamB: params.get('teamB') || 'ENG',
+      teamBName: params.get('teamBName') || 'ENGLAND',
+      series: params.get('series') || 'ICC Men’s World Cup 2026',
+      matchTitle: params.get('title') || 'Semi Final 1',
+      venue: params.get('venue') || 'Wankhede Stadium, Mumbai',
+      tossInfo: params.get('toss') || 'Toss at 18:30 IST',
+      minutes: parseInt(params.get('minutes')) || 10
+    };
+
+    document.getElementById('seriesName').textContent = data.series;
+    document.getElementById('matchTitle').textContent = data.matchTitle;
+    document.getElementById('teamAName').textContent = data.teamAName;
+    document.getElementById('teamACode').textContent = data.teamA;
+    document.getElementById('teamAFallback').textContent = data.teamA;
+    document.getElementById('teamBName').textContent = data.teamBName;
+    document.getElementById('teamBCode').textContent = data.teamB;
+    document.getElementById('teamBFallback').textContent = data.teamB;
+    document.getElementById('venueInfo').textContent = data.venue;
+    document.getElementById('tossInfo').textContent = data.tossInfo;
+
+    // Countdown
+    let totalSeconds = data.minutes * 60;
+    const cdEl = document.getElementById('countdownVal');
+    setInterval(() => {
+      if (totalSeconds <= 0) {
+        cdEl.textContent = '00:00';
+        return;
+      }
+      totalSeconds--;
+      const m = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+      const s = String(totalSeconds % 60).padStart(2, '0');
+      cdEl.textContent = `${m}:${s}`;
+    }, 1000);
+
+    // goLive() transition
+    window.goLive = function() {
+      const card = document.getElementById('mainCard');
+      const badge = document.getElementById('statusBadge');
+      badge.textContent = 'LIVE';
+      badge.classList.add('live-mode');
+      setTimeout(() => {
+        card.classList.add('exiting');
+      }, 1000);
+    };
+
+    function toggleTestBg() {
+      document.body.classList.toggle('test-bg');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'b' || e.key === 'B') toggleTestBg();
+      if (e.key === 'l' || e.key === 'L') window.goLive();
+    });
+  </script>
+</body>
+</html>
+

@@ -16,7 +16,7 @@ create table if not exists public.tournaments (
     overs_quota integer not null default 20 check (overs_quota > 0),
     rules jsonb not null default '{}'::jsonb,
     status text not null default 'active' check (status in ('active', 'completed')),
-    owner_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+    owner_id uuid default auth.uid() references auth.users(id) on delete set null,
     created_at timestamptz not null default now()
 );
 
@@ -48,7 +48,7 @@ create table if not exists public.players (
 -- =========================================================================
 create table if not exists public.matches (
     id uuid primary key default gen_random_uuid(),
-    owner_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+    owner_id uuid default auth.uid() references auth.users(id) on delete set null,
     team_a text not null,
     team_b text not null,
     toss_winner text,
@@ -214,5 +214,11 @@ values ('overlays', 'overlays', true)
 on conflict (id) do nothing;
 
 create policy "Allow public read access to overlays" on storage.objects for select using (bucket_id = 'overlays');
-create policy "Allow authenticated upload access to overlays" on storage.objects for insert with check (bucket_id = 'overlays' and auth.role() = 'authenticated');
-create policy "Allow authenticated delete access to overlays" on storage.objects for delete using (bucket_id = 'overlays' and auth.role() = 'authenticated');
+create policy "Allow validated image uploads to overlays" on storage.objects for insert with check (
+    bucket_id = 'overlays' 
+    and (storage.extension(name) in ('png', 'jpg', 'jpeg', 'webp'))
+);
+create policy "Allow owners or admins to delete overlay assets" on storage.objects for delete using (
+    bucket_id = 'overlays' 
+    and (auth.uid()::text = (storage.foldername(name))[1] or auth.role() = 'service_role')
+);

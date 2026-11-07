@@ -209,35 +209,67 @@ function App() {
     });
 
     // Local match state
-    const savedState = localStorage.getItem('cricdeck_match_state');
-    if (savedState) {
-      try {
+    try {
+      const savedState = localStorage.getItem('cricdeck_match_state');
+      if (savedState) {
         const parsed = JSON.parse(savedState);
-        setMatchState(parsed);
-        setShowSetup(false);
-        setViewRoute('scorer'); // resume scoring
-      } catch (e) {
-        console.error('Failed to parse saved match state', e);
+        if (parsed && typeof parsed === 'object') {
+          // Clean up legacy bloated delivery_history if present
+          if (Array.isArray(parsed.delivery_history)) {
+            parsed.delivery_history = parsed.delivery_history.map(item => {
+              if (item && item.prevState && item.prevState.delivery_history) {
+                const { delivery_history, ...cleanSnap } = item.prevState;
+                return { ...item, prevState: cleanSnap };
+              }
+              return item;
+            });
+          }
+          if (!parsed.striker) parsed.striker = { name: 'Striker', runs: 0, balls: 0, fours: 0, sixes: 0 };
+          if (!parsed.non_striker) parsed.non_striker = { name: 'Non-Striker', runs: 0, balls: 0, fours: 0, sixes: 0 };
+          if (!parsed.current_bowler) parsed.current_bowler = { name: 'Bowler', overs: 0, balls: 0, runs: 0, wickets: 0, maidens: 0 };
+          if (!Array.isArray(parsed.current_over_timeline)) parsed.current_over_timeline = [];
+          if (!Array.isArray(parsed.delivery_history)) parsed.delivery_history = [];
+
+          setMatchState(parsed);
+          setShowSetup(false);
+          setViewRoute('scorer'); // resume scoring
+        }
       }
+    } catch (e) {
+      console.error('Failed to parse saved match state, resetting corrupt state:', e);
+      try {
+        localStorage.removeItem('cricdeck_match_state');
+      } catch (err) {
+        // ignore
+      }
+      setViewRoute('landing');
     }
   }, []);
 
   // Save active tournament ID changes
   useEffect(() => {
-    if (activeTournamentId) {
-      localStorage.setItem('cricdeck_active_tournament_id', activeTournamentId);
-    } else {
-      localStorage.removeItem('cricdeck_active_tournament_id');
+    try {
+      if (activeTournamentId) {
+        localStorage.setItem('cricdeck_active_tournament_id', activeTournamentId);
+      } else {
+        localStorage.removeItem('cricdeck_active_tournament_id');
+      }
+    } catch (e) {
+      console.warn('LocalStorage error on tournament id save:', e);
     }
   }, [activeTournamentId]);
 
   // Save match state to localStorage and broadcast sync events on changes
   useEffect(() => {
     if (matchState) {
-      localStorage.setItem('cricdeck_match_state', JSON.stringify(matchState));
-      const creds = getSupabaseCredentials();
-      const matchId = creds.matchId || 'local';
-      localStorage.setItem(`cricdeck_match_${matchId}`, JSON.stringify(matchState));
+      try {
+        localStorage.setItem('cricdeck_match_state', JSON.stringify(matchState));
+        const creds = getSupabaseCredentials();
+        const matchId = creds.matchId || 'local';
+        localStorage.setItem(`cricdeck_match_${matchId}`, JSON.stringify(matchState));
+      } catch (e) {
+        console.warn('LocalStorage error on matchState save:', e);
+      }
       
       // If this belongs to a tournament, update it in the tournament matches list
       if (matchState.tournament_id) {
@@ -267,16 +299,28 @@ function App() {
             }
             return t;
           });
-          localStorage.setItem('cricdeck_tournaments', JSON.stringify(updated));
+          try {
+            localStorage.setItem('cricdeck_tournaments', JSON.stringify(updated));
+          } catch (e) {
+            console.warn('LocalStorage error saving tournaments:', e);
+          }
           return updated;
         });
       }
 
-      const channel = new BroadcastChannel('cricdeck_sync');
-      channel.postMessage({ type: 'match_update', state: matchState });
-      channel.close();
+      try {
+        const channel = new BroadcastChannel('cricdeck_sync');
+        channel.postMessage({ type: 'match_update', state: matchState });
+        channel.close();
+      } catch (e) {
+        console.warn('BroadcastChannel error:', e);
+      }
     } else {
-      localStorage.removeItem('cricdeck_match_state');
+      try {
+        localStorage.removeItem('cricdeck_match_state');
+      } catch (e) {
+        // ignore
+      }
     }
   }, [matchState]);
 
@@ -475,34 +519,44 @@ function App() {
   };
 
   const handleUndo = () => {
-    if (!matchState || matchState.delivery_history.length === 0) return;
-    const undone = undoDelivery(matchState);
-    setMatchState(undone);
-    syncToSupabase(undone, { type: 'UNDO' });
+    setMatchState(prev => {
+      if (!prev || !prev.delivery_history || prev.delivery_history.length === 0) return prev;
+      const undone = undoDelivery(prev);
+      setTimeout(() => {
+        syncToSupabase(undone, { type: 'UNDO' });
+      }, 0);
+      return undone;
+    });
   };
 
   const applyAction = (action) => {
-    const nextState = processDelivery(matchState, action);
-    const isOverComplete = nextState.balls_in_over === 0 && (
-      action.type === 'RUNS' || 
-      action.type === 'BYES' || 
-      action.type === 'LEG_BYES' || 
-      (action.type === 'WICKET' && action.wicketType !== 'run_out_wide' && action.wicketType !== 'run_out_noball')
-    );
-    
-    setMatchState(nextState);
-    syncToSupabase(nextState, { type: 'DELIVERY' });
+    setMatchState(prev => {
+      if (!prev) return prev;
+      const nextState = processDelivery(prev, action);
+      const isOverComplete = nextState.balls_in_over === 0 && (
+        action.type === 'RUNS' || 
+        action.type === 'BYES' || 
+        action.type === 'LEG_BYES' || 
+        (action.type === 'WICKET' && action.wicketType !== 'run_out_wide' && action.wicketType !== 'run_out_noball')
+      );
+      
+      setTimeout(() => {
+        syncToSupabase(nextState, { type: 'DELIVERY' });
+        if (isOverComplete) {
+          setNextBowlerName('');
+          setShowBowlerModal(true);
+        }
+      }, 0);
 
-    if (isOverComplete) {
-      setNextBowlerName('');
-      setShowBowlerModal(true);
-    }
+      return nextState;
+    });
   };
 
   const submitBowlerChange = () => {
-    if (!matchState || !nextBowlerName.trim()) return;
+    if (!nextBowlerName.trim()) return;
     
     setMatchState(prev => {
+      if (!prev) return prev;
       const updated = {
         ...prev,
         current_bowler: {
@@ -515,7 +569,7 @@ function App() {
         },
         current_over_timeline: []
       };
-      syncToSupabase(updated);
+      setTimeout(() => syncToSupabase(updated), 0);
       return updated;
     });
 
@@ -523,10 +577,12 @@ function App() {
   };
 
   const handleSwapStrike = () => {
-    if (!matchState) return;
-    const rotated = rotateStrike(matchState);
-    setMatchState(rotated);
-    syncToSupabase(rotated);
+    setMatchState(prev => {
+      if (!prev) return prev;
+      const rotated = rotateStrike(prev);
+      setTimeout(() => syncToSupabase(rotated), 0);
+      return rotated;
+    });
   };
 
   const handleEndInnings = () => {
@@ -1305,7 +1361,28 @@ function App() {
   }
 
   // Active Live Scorer Route
-  if (viewRoute === 'scorer' && matchState) {
+  if (viewRoute === 'scorer') {
+    if (!matchState) {
+      return (
+        <div className="app-container">
+          <header className="app-header glass-panel">
+            <div className="brand" onClick={() => setViewRoute('landing')} style={{ cursor: 'pointer' }}>
+              <Trophy className="brand-icon" size={28} />
+              <h1>CricDeck</h1>
+            </div>
+          </header>
+          <LandingPage 
+            tournaments={tournaments}
+            recentMatches={getRecentMatches()}
+            onStartNewTournament={() => setViewRoute('setup_tournament')}
+            onSelectTournament={(id) => {
+              setActiveTournamentId(id);
+              setViewRoute('tournament_dashboard');
+            }}
+          />
+        </div>
+      );
+    }
     return (
       <div className="app-container">
         {/* Header */}
@@ -1332,7 +1409,7 @@ function App() {
               className="header-tab-btn"
               onClick={() => setViewRoute('overlay_editor')}
             >
-              Overlay Editor
+              Overlays & Screens
             </button>
             <button 
               className={`header-tab-btn ${activeTab === 'viewer' ? 'active' : ''}`}
@@ -1419,15 +1496,15 @@ function App() {
                       <tr className="batter-row active">
                         <td className="batter-name-cell">
                           <span className="strike-dot" />
-                          {matchState.striker.name}
+                          {matchState.striker?.name || 'Striker'}
                         </td>
-                        <td className="stat-cell">{matchState.striker.runs}</td>
-                        <td className="stat-cell">{matchState.striker.balls}</td>
-                        <td className="stat-cell">{matchState.striker.fours}</td>
-                        <td className="stat-cell">{matchState.striker.sixes}</td>
+                        <td className="stat-cell">{matchState.striker?.runs ?? 0}</td>
+                        <td className="stat-cell">{matchState.striker?.balls ?? 0}</td>
+                        <td className="stat-cell">{matchState.striker?.fours ?? 0}</td>
+                        <td className="stat-cell">{matchState.striker?.sixes ?? 0}</td>
                         <td className="stat-cell">
-                          {matchState.striker.balls > 0 
-                            ? ((matchState.striker.runs / matchState.striker.balls) * 100).toFixed(1)
+                          {(matchState.striker?.balls || 0) > 0 
+                            ? (((matchState.striker?.runs || 0) / matchState.striker.balls) * 100).toFixed(1)
                             : '0.0'
                           }
                         </td>
@@ -1435,15 +1512,15 @@ function App() {
                       <tr className="batter-row">
                         <td className="batter-name-cell">
                           <span className="strike-dot" style={{ opacity: 0 }} />
-                          {matchState.non_striker.name}
+                          {matchState.non_striker?.name || 'Non-Striker'}
                         </td>
-                        <td className="stat-cell">{matchState.non_striker.runs}</td>
-                        <td className="stat-cell">{matchState.non_striker.balls}</td>
-                        <td className="stat-cell">{matchState.non_striker.fours}</td>
-                        <td className="stat-cell">{matchState.non_striker.sixes}</td>
+                        <td className="stat-cell">{matchState.non_striker?.runs ?? 0}</td>
+                        <td className="stat-cell">{matchState.non_striker?.balls ?? 0}</td>
+                        <td className="stat-cell">{matchState.non_striker?.fours ?? 0}</td>
+                        <td className="stat-cell">{matchState.non_striker?.sixes ?? 0}</td>
                         <td className="stat-cell">
-                          {matchState.non_striker.balls > 0 
-                            ? ((matchState.non_striker.runs / matchState.non_striker.balls) * 100).toFixed(1)
+                          {(matchState.non_striker?.balls || 0) > 0 
+                            ? (((matchState.non_striker?.runs || 0) / matchState.non_striker.balls) * 100).toFixed(1)
                             : '0.0'
                           }
                         </td>
@@ -1466,37 +1543,37 @@ function App() {
                   </div>
                   <div className="bowler-stat-row">
                     <div className="bowler-header">
-                      <span className="bowler-name">{matchState.current_bowler.name}</span>
+                      <span className="bowler-name">{matchState.current_bowler?.name || 'Bowler'}</span>
                     </div>
                     <div className="bowler-grid">
                       <div className="bowler-stat-item">
                         <span className="bowler-stat-val">
-                          {matchState.current_bowler.overs}.{matchState.current_bowler.balls}
+                          {matchState.current_bowler?.overs ?? 0}.{matchState.current_bowler?.balls ?? 0}
                         </span>
                         <span className="bowler-stat-lbl">Overs</span>
                       </div>
                       <div className="bowler-stat-item">
                         <span className="bowler-stat-val">
-                          {matchState.current_bowler.maidens}
+                          {matchState.current_bowler?.maidens ?? 0}
                         </span>
                         <span className="bowler-stat-lbl">Mdn</span>
                       </div>
                       <div className="bowler-stat-item">
                         <span className="bowler-stat-val">
-                          {matchState.current_bowler.runs}
+                          {matchState.current_bowler?.runs ?? 0}
                         </span>
                         <span className="bowler-stat-lbl">Runs</span>
                       </div>
                       <div className="bowler-stat-item">
                         <span className="bowler-stat-val">
-                          {matchState.current_bowler.wickets}
+                          {matchState.current_bowler?.wickets ?? 0}
                         </span>
                         <span className="bowler-stat-lbl">Wkts</span>
                       </div>
                     </div>
                     <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      Economy: {((matchState.current_bowler.overs * 6 + matchState.current_bowler.balls) > 0)
-                        ? ((matchState.current_bowler.runs / (matchState.current_bowler.overs * 6 + matchState.current_bowler.balls)) * 6).toFixed(2)
+                      Economy: {(((matchState.current_bowler?.overs || 0) * 6 + (matchState.current_bowler?.balls || 0)) > 0)
+                        ? (((matchState.current_bowler?.runs || 0) / ((matchState.current_bowler?.overs || 0) * 6 + (matchState.current_bowler?.balls || 0))) * 6).toFixed(2)
                         : '0.00'
                       }
                     </div>
@@ -2066,7 +2143,28 @@ function App() {
     );
   }
 
-  return null;
+  return (
+    <div className="app-container">
+      <header className="app-header glass-panel">
+        <div className="brand" onClick={() => setViewRoute('landing')} style={{ cursor: 'pointer' }}>
+          <Trophy className="brand-icon" size={28} />
+          <h1>CricDeck</h1>
+        </div>
+        <div className="header-actions">
+          {renderUserProfile()}
+        </div>
+      </header>
+      <LandingPage 
+        tournaments={tournaments}
+        recentMatches={getRecentMatches()}
+        onStartNewTournament={() => setViewRoute('setup_tournament')}
+        onSelectTournament={(id) => {
+          setActiveTournamentId(id);
+          setViewRoute('tournament_dashboard');
+        }}
+      />
+    </div>
+  );
 }
 
 export default App;

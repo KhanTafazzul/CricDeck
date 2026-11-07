@@ -4,10 +4,13 @@
  * Rotates strike between striker and non-striker
  */
 export function rotateStrike(state) {
+  if (!state) return state;
+  const striker = state.striker ? { ...state.striker } : { name: 'Striker', runs: 0, balls: 0, fours: 0, sixes: 0 };
+  const nonStriker = state.non_striker ? { ...state.non_striker } : { name: 'Non-Striker', runs: 0, balls: 0, fours: 0, sixes: 0 };
   return {
     ...state,
-    striker: { ...state.non_striker },
-    non_striker: { ...state.striker }
+    striker: nonStriker,
+    non_striker: striker
   };
 }
 
@@ -15,16 +18,16 @@ export function rotateStrike(state) {
  * Formats overs to float format, e.g. 1 over and 2 balls => 1.2
  */
 export function formatOvers(overs, balls) {
-  return parseFloat(`${overs}.${balls}`);
+  return parseFloat(`${overs || 0}.${balls || 0}`);
 }
 
 /**
  * Calculates current run rate
  */
 export function calculateRunRate(runs, overs, balls) {
-  const totalBalls = overs * 6 + balls;
+  const totalBalls = (overs || 0) * 6 + (balls || 0);
   if (totalBalls === 0) return 0.00;
-  return parseFloat(((runs / totalBalls) * 6).toFixed(2));
+  return parseFloat((((runs || 0) / totalBalls) * 6).toFixed(2));
 }
 
 /**
@@ -33,8 +36,18 @@ export function calculateRunRate(runs, overs, balls) {
  * @param {Object} action - Scoring action (e.g. RUNS, WIDE, NO_BALL, etc.)
  */
 export function processDelivery(state, action) {
-  // Create deep copy of state to avoid mutations
-  let newState = JSON.parse(JSON.stringify(state));
+  if (!state) return state;
+
+  // Create deep copy of state base properties to avoid direct mutations
+  let newState = {
+    ...state,
+    striker: state.striker ? { ...state.striker } : { name: 'Striker', runs: 0, balls: 0, fours: 0, sixes: 0 },
+    non_striker: state.non_striker ? { ...state.non_striker } : { name: 'Non-Striker', runs: 0, balls: 0, fours: 0, sixes: 0 },
+    current_bowler: state.current_bowler ? { ...state.current_bowler } : { name: 'Bowler', overs: 0, balls: 0, runs: 0, wickets: 0, maidens: 0 },
+    current_over_timeline: Array.isArray(state.current_over_timeline) ? [...state.current_over_timeline] : [],
+    delivery_history: Array.isArray(state.delivery_history) ? [...state.delivery_history] : []
+  };
+
   let isLegal = true;
   let runsAdded = 0;
   let extrasAdded = 0;
@@ -42,7 +55,7 @@ export function processDelivery(state, action) {
 
   switch (action.type) {
     case 'RUNS': {
-      const runs = action.value;
+      const runs = Number.isInteger(action.value) ? action.value : 0;
       runsAdded = runs;
       isLegal = true;
       timelineLabel = runs === 0 ? '•' : `${runs}`;
@@ -139,6 +152,7 @@ export function processDelivery(state, action) {
       const { wicketType, dismissedBatterName, newBatterName, runsCompleted } = action;
       isLegal = wicketType !== 'run_out_wide' && wicketType !== 'run_out_noball';
       runsAdded = runsCompleted || 0;
+      const incomingBatter = newBatterName || 'Next Batter';
       
       if (wicketType === 'run_out_wide') {
         // Run out on a Wide ball
@@ -157,7 +171,7 @@ export function processDelivery(state, action) {
         // Standard legal ball wicket
         newState.striker.balls += 1;
         
-        // Bowler gets credit for the wicket unless it's a run out
+        // Bowler gets credit for the wicket unless it's a run out or retired hurt
         if (wicketType !== 'run_out' && wicketType !== 'retired_hurt') {
           newState.current_bowler.wickets += 1;
         }
@@ -170,7 +184,7 @@ export function processDelivery(state, action) {
       // Handle strike rotation after wicket
       if (wicketType === 'caught' || wicketType === 'caught_behind') {
         // MCC 2022 Rule: New batter ALWAYS takes strike
-        newState.striker = { name: newBatterName, runs: 0, balls: 0, fours: 0, sixes: 0 };
+        newState.striker = { name: incomingBatter, runs: 0, balls: 0, fours: 0, sixes: 0 };
       } else if (wicketType === 'run_out' || wicketType === 'run_out_wide' || wicketType === 'run_out_noball') {
         // Identify if striker or non-striker was run out
         const runsCount = runsCompleted || 0;
@@ -178,22 +192,20 @@ export function processDelivery(state, action) {
 
         if (dismissedBatterName === newState.striker.name) {
           // Striker dismissed
-          newState.striker = { name: newBatterName, runs: 0, balls: 0, fours: 0, sixes: 0 };
-          // If runs completed was odd, the new striker should rotate to non-striker
+          newState.striker = { name: incomingBatter, runs: 0, balls: 0, fours: 0, sixes: 0 };
           if (runsOdd) {
             newState = rotateStrike(newState);
           }
         } else {
           // Non-striker dismissed
-          newState.non_striker = { name: newBatterName, runs: 0, balls: 0, fours: 0, sixes: 0 };
-          // If runs completed was odd, the striker moves to non-striker
+          newState.non_striker = { name: incomingBatter, runs: 0, balls: 0, fours: 0, sixes: 0 };
           if (runsOdd) {
             newState = rotateStrike(newState);
           }
         }
       } else {
-        // Bowled, LBW, Stumped: New batter takes strike
-        newState.striker = { name: newBatterName, runs: 0, balls: 0, fours: 0, sixes: 0 };
+        // Bowled, LBW, Stumped, etc.: New batter takes strike
+        newState.striker = { name: incomingBatter, runs: 0, balls: 0, fours: 0, sixes: 0 };
       }
       break;
     }
@@ -205,43 +217,40 @@ export function processDelivery(state, action) {
       timelineLabel = '+5P';
       break;
     }
+
+    default:
+      break;
   }
 
   // Update total runs
-  newState.total_runs += runsAdded;
+  newState.total_runs = (newState.total_runs || 0) + runsAdded;
 
   // Handle over calculations
   if (isLegal) {
-    newState.balls_in_over += 1;
+    newState.balls_in_over = (newState.balls_in_over || 0) + 1;
     if (newState.balls_in_over === 6) {
       // Over complete!
-      newState.overs += 1;
+      newState.overs = (newState.overs || 0) + 1;
       newState.balls_in_over = 0;
       
       // Update bowler's completed overs
-      newState.current_bowler.overs += 1;
+      newState.current_bowler.overs = (newState.current_bowler.overs || 0) + 1;
       newState.current_bowler.balls = 0;
 
       // Swap strike automatically at the end of the over
       newState = rotateStrike(newState);
 
-      // Check for Maiden over
-      // Standard definition: Bowler conceded 0 runs (off bat + wides/no-balls) in this over
-      // We look at the bowler runs conceded in the over. Let's compute it.
-      // For simplicity, we can inspect current over deliveries runs.
-      const currentOverDeliveriesConceded = newState.current_over_timeline.reduce((acc, label) => {
-        if (label === '•' || label === 'W' || label.includes('B') || label.includes('LB')) {
-          // dot, wicket, byes, leg-byes don't count against bowler
-          return acc;
-        }
-        return acc + 1; // any run or extra penalty counts against bowler
-      }, 0) + (timelineLabel === '•' || timelineLabel === 'W' || timelineLabel.includes('B') || timelineLabel.includes('LB') ? 0 : runsAdded);
+      // Check for Maiden over: Bowler conceded 0 runs in this over
+      const timelineWithCurrent = [...newState.current_over_timeline, timelineLabel];
+      const isMaiden = timelineWithCurrent.every(label => 
+        label === '•' || label === 'W' || label.endsWith('B') || label.endsWith('LB')
+      );
 
-      if (currentOverDeliveriesConceded === 0) {
-        newState.current_bowler.maidens += 1;
+      if (isMaiden) {
+        newState.current_bowler.maidens = (newState.current_bowler.maidens || 0) + 1;
       }
     } else {
-      newState.current_bowler.balls += 1;
+      newState.current_bowler.balls = (newState.current_bowler.balls || 0) + 1;
     }
   }
 
@@ -251,14 +260,42 @@ export function processDelivery(state, action) {
   // Recalculate run rate
   newState.run_rate = calculateRunRate(newState.total_runs, newState.overs, newState.balls_in_over);
 
+  // Clean snapshot of state for undo (DO NOT include recursive delivery_history)
+  const cleanStateSnapshot = {
+    team_a: state.team_a,
+    team_b: state.team_b,
+    toss_winner: state.toss_winner,
+    elected_to: state.elected_to,
+    current_innings: state.current_innings,
+    status: state.status,
+    total_runs: state.total_runs,
+    wickets: state.wickets,
+    overs: state.overs,
+    balls_in_over: state.balls_in_over,
+    run_rate: state.run_rate,
+    striker: state.striker ? { ...state.striker } : null,
+    non_striker: state.non_striker ? { ...state.non_striker } : null,
+    current_bowler: state.current_bowler ? { ...state.current_bowler } : null,
+    current_over_timeline: Array.isArray(state.current_over_timeline) ? [...state.current_over_timeline] : [],
+    tournament_id: state.tournament_id,
+    team_a_id: state.team_a_id,
+    team_b_id: state.team_b_id,
+    innings1_score: state.innings1_score,
+    innings1_wickets: state.innings1_wickets,
+    innings1_overs: state.innings1_overs,
+    innings1_balls: state.innings1_balls,
+    winner_id: state.winner_id,
+    overs_quota: state.overs_quota
+  };
+
   // Update ledger for undo
   const ledgerEntry = {
     delivery_index: newState.delivery_history.length,
-    over_number: newState.balls_in_over === 0 && isLegal ? newState.overs : newState.overs + 1,
-    ball_number: isLegal ? (newState.balls_in_over === 0 ? 6 : newState.balls_in_over) : newState.balls_in_over + 1,
-    striker_name: state.striker.name,
-    non_striker_name: state.non_striker.name,
-    bowler_name: state.current_bowler.name,
+    over_number: newState.balls_in_over === 0 && isLegal ? newState.overs : (newState.overs || 0) + 1,
+    ball_number: isLegal ? (newState.balls_in_over === 0 ? 6 : newState.balls_in_over) : (newState.balls_in_over || 0) + 1,
+    striker_name: state.striker?.name || 'Striker',
+    non_striker_name: state.non_striker?.name || 'Non-Striker',
+    bowler_name: state.current_bowler?.name || 'Bowler',
     runs_batter: runsAdded - extrasAdded,
     runs_extras: extrasAdded,
     extra_type: action.type === 'WIDE' ? 'wide' : (action.type === 'NO_BALL' ? 'no_ball' : (action.type === 'BYES' ? 'bye' : (action.type === 'LEG_BYES' ? 'leg_bye' : null))),
@@ -268,8 +305,8 @@ export function processDelivery(state, action) {
     keeper_name: action.keeperName || null,
     is_legal: isLegal,
     innings: state.current_innings || 1,
-    action: action, // Store original action for references
-    prevState: state // Store previous state to support quick revert
+    action: action,
+    prevState: cleanStateSnapshot
   };
 
   newState.delivery_history.push(ledgerEntry);
@@ -281,15 +318,13 @@ export function processDelivery(state, action) {
  * Performs an undo operation on the scoring state
  */
 export function undoDelivery(state) {
-  if (state.delivery_history.length === 0) return state;
+  if (!state || !state.delivery_history || state.delivery_history.length === 0) return state;
   const history = [...state.delivery_history];
   const lastEntry = history.pop();
-  
-  // Restore previous state and copy the popped ledger history back
-  const prevState = {
+  if (!lastEntry || !lastEntry.prevState) return state;
+
+  return {
     ...lastEntry.prevState,
     delivery_history: history
   };
-
-  return prevState;
 }

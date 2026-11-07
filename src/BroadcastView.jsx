@@ -467,15 +467,22 @@ export default function BroadcastView() {
       }
     }
 
-    // Sync via local BroadcastChannel
+    // Sync via local BroadcastChannel with payload validation
     const localChannel = new BroadcastChannel('cricdeck_sync');
     localChannel.onmessage = (event) => {
-      if (event.data) {
-        if (event.data.type === 'match_update') {
-          setMatchState(event.data.state);
+      if (event.data && typeof event.data === 'object') {
+        if (event.data.type === 'match_update' && event.data.state && typeof event.data.state === 'object') {
+          // If a specific match ID is targeted in query params, reject updates from different matches
+          if (!urlMatchId || !event.data.state.id || event.data.state.id === urlMatchId) {
+            setMatchState(event.data.state);
+          }
         } else if (event.data.type === 'layout_update') {
-          if (event.data.layout) setLayout(event.data.layout);
-          if (event.data.backgroundUrl !== undefined) setBackgroundUrl(event.data.backgroundUrl);
+          if (event.data.layout && typeof event.data.layout === 'object') {
+            setLayout(event.data.layout);
+          }
+          if (typeof event.data.backgroundUrl === 'string') {
+            setBackgroundUrl(event.data.backgroundUrl);
+          }
         }
       }
     };

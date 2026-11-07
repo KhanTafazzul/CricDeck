@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Trophy, Users, UserPlus, Image, ChevronLeft, ChevronRight, Check, Trash2, Zap } from 'lucide-react';
 import OverlayEditor from './OverlayEditor';
+import { compressImage } from './imageUtils';
 
 export default function TournamentSetup({ onComplete, onCancel }) {
   const [step, setStep] = useState(1);
@@ -22,28 +23,30 @@ export default function TournamentSetup({ onComplete, onCancel }) {
   const [newPlayerRole, setNewPlayerRole] = useState('Batsman');
   const [newPlayerPhoto, setNewPlayerPhoto] = useState('');
 
-  // Logo file-to-base64
-  const handleLogoUpload = (e, index) => {
+  // Logo file-to-base64 with secure validation and compression
+  const handleLogoUpload = async (e, index) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
+    try {
+      const compressed = await compressImage(file, 240, 240, 0.85);
       const updated = [...teams];
-      updated[index].logo_data = reader.result;
+      updated[index].logo_data = compressed;
       setTeams(updated);
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      alert(err.message || 'Failed to upload logo.');
+    }
   };
 
-  // Player Photo file-to-base64
-  const handlePhotoUpload = (e) => {
+  // Player Photo file-to-base64 with secure validation and compression
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setNewPlayerPhoto(reader.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file, 240, 240, 0.85);
+      setNewPlayerPhoto(compressed);
+    } catch (err) {
+      alert(err.message || 'Failed to upload player photo.');
+    }
   };
 
   const handleAddTeam = () => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Plus, Shield, Calendar, ArrowRight, Zap, Award } from 'lucide-react';
+import { Trophy, Plus, Shield, Calendar, ArrowRight, Zap, Award, Tv, Sparkles } from 'lucide-react';
 
 export default function LandingPage({ 
   tournaments = [], 
@@ -21,9 +21,20 @@ export default function LandingPage({
             CricDeck provides ICC-standard statistical engines, real-time OBS graphics overlays, 
             and interactive scorecards for local and professional leagues.
           </p>
-          <button className="btn btn-primary btn-large" onClick={onStartNewTournament}>
-            <Plus size={20} /> Start New Tournament
-          </button>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary btn-large" onClick={onStartNewTournament}>
+              <Plus size={20} /> Start New Tournament
+            </button>
+            <a 
+              href="/overlays/index.html" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="btn btn-secondary btn-large"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}
+            >
+              <Tv size={20} /> Pre-Match Overlays (6 ICC Screens)
+            </a>
+          </div>
         </div>
         <div className="hero-visual">
           <Trophy className="hero-trophy-icon" size={180} />
