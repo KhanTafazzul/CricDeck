@@ -226,17 +226,94 @@ export default function OverlayEditor({ matchState, onBack }) {
   // Pre-Match vs In-Match Overlay Mode
   const [editorTab, setEditorTab] = useState('in_match'); // 'in_match' or 'pre_match'
   const [copiedVariant, setCopiedVariant] = useState(null);
-  const [prematchConfig, setPrematchConfig] = useState({
-    teamA: (matchState?.team_a || 'IND').substring(0, 3).toUpperCase(),
-    teamAName: matchState?.team_a || 'India',
-    teamB: (matchState?.team_b || 'AUS').substring(0, 3).toUpperCase(),
-    teamBName: matchState?.team_b || 'Australia',
-    title: matchState?.tournament_id ? 'Tournament Match' : 'ICC Cricket Live',
-    series: 'International Championship',
-    venue: 'National Cricket Stadium',
-    toss: matchState?.toss_winner ? `${matchState.toss_winner} elected to ${matchState.elected_to}` : 'Toss at 14:00 Local',
-    minutes: 15
+  const [tournamentMatches, setTournamentMatches] = useState([]);
+  const [selectedMatchId, setSelectedMatchId] = useState('');
+
+  // Load tournament matches from local storage if available
+  useEffect(() => {
+    try {
+      const tourneyRaw = localStorage.getItem('cricdeck_tournament_data');
+      if (tourneyRaw) {
+        const tourney = JSON.parse(tourneyRaw);
+        if (tourney?.matches && Array.isArray(tourney.matches)) {
+          setTournamentMatches(tourney.matches);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read tournament matches', e);
+    }
+  }, []);
+
+  const [prematchConfig, setPrematchConfig] = useState(() => {
+    // Check if saved in localStorage
+    try {
+      const saved = localStorage.getItem('cricdeck_overlay_shared_data');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          teamA: parsed.teamA || (matchState?.team_a || 'IND').substring(0, 3).toUpperCase(),
+          teamAName: parsed.teamAName || matchState?.team_a || 'India',
+          teamAColor: parsed.teamAColor || '#0047AB',
+          teamB: parsed.teamB || (matchState?.team_b || 'AUS').substring(0, 3).toUpperCase(),
+          teamBName: parsed.teamBName || matchState?.team_b || 'Australia',
+          teamBColor: parsed.teamBColor || '#E63946',
+          useTeamColors: parsed.useTeamColors !== undefined ? parsed.useTeamColors : true,
+          title: parsed.title || (matchState?.tournament_id ? 'Tournament Match' : 'ICC Cricket Live'),
+          series: parsed.series || 'International Championship',
+          venue: parsed.venue || 'National Cricket Stadium',
+          toss: parsed.toss || (matchState?.toss_winner ? `${matchState.toss_winner} elected to ${matchState.elected_to}` : 'Toss at 14:00 Local'),
+          minutes: parsed.minutes || 15
+        };
+      }
+    } catch (e) {}
+
+    return {
+      teamA: (matchState?.team_a || 'IND').substring(0, 3).toUpperCase(),
+      teamAName: matchState?.team_a || 'India',
+      teamAColor: '#0047AB',
+      teamB: (matchState?.team_b || 'AUS').substring(0, 3).toUpperCase(),
+      teamBName: matchState?.team_b || 'Australia',
+      teamBColor: '#E63946',
+      useTeamColors: true,
+      title: matchState?.tournament_id ? 'Tournament Match' : 'ICC Cricket Live',
+      series: 'International Championship',
+      venue: 'National Cricket Stadium',
+      toss: matchState?.toss_winner ? `${matchState.toss_winner} elected to ${matchState.elected_to}` : 'Toss at 14:00 Local',
+      minutes: 15
+    };
   });
+
+  // Sync to localStorage and BroadcastChannel whenever prematchConfig changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('cricdeck_overlay_shared_data', JSON.stringify(prematchConfig));
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('cricdeck_overlay_sync');
+        bc.postMessage({ type: 'CRICDECK_OVERLAY_UPDATE', data: prematchConfig });
+        bc.close();
+      }
+    } catch (e) {}
+  }, [prematchConfig]);
+
+  const handleSelectTournamentMatch = (matchId) => {
+    setSelectedMatchId(matchId);
+    if (!matchId) return;
+    const match = tournamentMatches.find(m => String(m.id) === String(matchId));
+    if (match) {
+      setPrematchConfig(prev => ({
+        ...prev,
+        teamA: (match.team_a_code || match.team_a_name || 'TMA').substring(0, 3).toUpperCase(),
+        teamAName: match.team_a_name || 'Team A',
+        teamAColor: match.team_a_color || '#0047AB',
+        teamB: (match.team_b_code || match.team_b_name || 'TMB').substring(0, 3).toUpperCase(),
+        teamBName: match.team_b_name || 'Team B',
+        teamBColor: match.team_b_color || '#E63946',
+        title: match.tournament_name || prev.title,
+        venue: match.venue || prev.venue,
+        series: `Match #${match.match_number || matchId}`
+      }));
+    }
+  };
 
   const PRELOAD_VARIANTS = [
     {
@@ -244,7 +321,7 @@ export default function OverlayEditor({ matchState, onBack }) {
       name: "Broadcast Lower Third",
       file: "variant1_broadcast_lower_third.html",
       desc: "Angled skew bars (-12deg) anchored bottom-left (760x120px) with team stripes, countdown, and PRE-MATCH/LIVE status badge.",
-      badge: "#F5B800 / #E63946",
+      badge: "Team Contrast Skew Stripes",
       type: "Barlow Condensed 800 italic & Inter 500",
       anim: "Slide In from Left"
     },
@@ -252,8 +329,8 @@ export default function OverlayEditor({ matchState, onBack }) {
       id: 2,
       name: "Centered Versus Card",
       file: "variant2_centered_versus_card.html",
-      desc: "Centered 1100x460px high-contrast card with 180px circular logo frames, hairline divider, and accent cyan highlights.",
-      badge: "Gradient #101820 to #1E2D3D",
+      desc: "Centered 1100x460px high-contrast card with circular logo frames, hairline divider, and team accent halos.",
+      badge: "Team Contrast Halos",
       type: "Oswald 700 & 300 / Inter 400",
       anim: "Scale 0.96 to 1 with Fade-in"
     },
@@ -261,8 +338,8 @@ export default function OverlayEditor({ matchState, onBack }) {
       id: 3,
       name: "Split Diagonal",
       file: "variant3_split_diagonal.html",
-      desc: "Full-bleed 15-degree diagonal wipe with 6px white seam, oversized 180px cropped ghost codes, and 520x88px center pill.",
-      badge: "#0047AB / #FF6B2C",
+      desc: "Full-bleed 15-degree diagonal wipe with 6px white seam, oversized 180px cropped ghost codes, and center battle pill.",
+      badge: "Dynamic Diagonal Split",
       type: "Archivo Black 180px & Archivo 600",
       anim: "Screen Edge Wipes (700ms)"
     },
@@ -270,8 +347,8 @@ export default function OverlayEditor({ matchState, onBack }) {
       id: 4,
       name: "Top Bar Preview",
       file: "variant4_top_bar_preview.html",
-      desc: "Full-width architectural top ribbon 1920x140px with warm-gray background, team logo slots, and 4px orange underline.",
-      badge: "#F2F2F0 / #E4572E",
+      desc: "Full-width architectural top ribbon 1920x140px with glass background, team logo slots, and dynamic contrast underlines.",
+      badge: "Architectural Ribbon",
       type: "Space Grotesk 600 (44px)",
       anim: "Drop Down (400ms)"
     },
@@ -279,8 +356,8 @@ export default function OverlayEditor({ matchState, onBack }) {
       id: 5,
       name: "Minimal Vertical Stack",
       file: "variant5_minimal_vertical_stack.html",
-      desc: "Right-side dark column (x 1300 to 1920) with neon electric-lime border, 80ms staggered typography, and 96px countdown.",
-      badge: "#0A0A0A / #C8FF00",
+      desc: "Right-side dark column (x 1300 to 1920) with team contrast glowing indicators, 80ms staggered typography, and neon countdown.",
+      badge: "Dark Neon Stack",
       type: "Inter 700 & JetBrains Mono 500",
       anim: "80ms Staggered Rise"
     },
@@ -288,10 +365,19 @@ export default function OverlayEditor({ matchState, onBack }) {
       id: 6,
       name: "Floating Glass Pills",
       file: "variant6_floating_glass_pills.html",
-      desc: "Tri-pill floating dock centered at bottom with 18px backdrop blur, rounded pill geometry, and neon gradient countdown.",
+      desc: "Tri-pill floating dock centered at bottom with 18px backdrop blur, rounded pill geometry, team accent borders, and glowing countdown.",
       badge: "Glassmorphism Blur 18px",
       type: "Sora 600 & 700 Tabular",
       anim: "120ms Staggered Rise & Scale"
+    },
+    {
+      id: 7,
+      name: "Arena Matchup HUD (New)",
+      file: "variant7_arena_matchup_hud.html",
+      desc: "Dual 3D-angled glass battle panels (skew -8deg) with dynamic team contrast glow, central holographic status bridge, and neon digital countdown.",
+      badge: "Dynamic Team Colors vs Unified",
+      type: "Barlow Condensed 800 & JetBrains Mono 700",
+      anim: "3D Perspective Glide (680ms)"
     }
   ];
 
@@ -301,6 +387,9 @@ export default function OverlayEditor({ matchState, onBack }) {
       teamAName: prematchConfig.teamAName,
       teamB: prematchConfig.teamB,
       teamBName: prematchConfig.teamBName,
+      teamAColor: prematchConfig.teamAColor,
+      teamBColor: prematchConfig.teamBColor,
+      useTeamColors: prematchConfig.useTeamColors ? 'true' : 'false',
       title: prematchConfig.title,
       series: prematchConfig.series,
       venue: prematchConfig.venue,
@@ -699,17 +788,53 @@ export default function OverlayEditor({ matchState, onBack }) {
 
             {/* Quick Param Customizer */}
             <div className="glass-panel" style={{ padding: '20px 24px', borderRadius: '12px', marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#00FF88' }}>
-                <Sliders size={16} /> Live Overlay Dynamic Placeholders
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#00FF88' }}>
+                  <Sliders size={16} /> Dynamic Match & Team Contrast Control Center
+                </h3>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  {tournamentMatches.length > 0 && (
+                    <select
+                      className="form-control"
+                      style={{ fontSize: '0.8rem', padding: '4px 10px', background: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
+                      value={selectedMatchId}
+                      onChange={e => handleSelectTournamentMatch(e.target.value)}
+                    >
+                      <option value="">-- Quick Load Match from Tournament --</option>
+                      {tournamentMatches.map((m, idx) => (
+                        <option key={m.id || idx} value={m.id}>
+                          Match #{m.match_number || idx + 1}: {m.team_a_name || 'Team A'} vs {m.team_b_name || 'Team B'}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#CBD5E1', cursor: 'pointer', margin: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={prematchConfig.useTeamColors}
+                      onChange={e => setPrematchConfig({ ...prematchConfig, useTeamColors: e.target.checked })}
+                    />
+                    <span>Dynamic Team Colors (High Contrast)</span>
+                  </label>
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginBottom: '4px' }}>Team A Code & Name</label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginBottom: '4px' }}>Team A (Code, Name, Color)</label>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <input 
+                      type="color"
+                      value={prematchConfig.teamAColor}
+                      title="Team A Color"
+                      disabled={!prematchConfig.useTeamColors}
+                      onChange={e => setPrematchConfig({ ...prematchConfig, teamAColor: e.target.value })}
+                      style={{ width: '36px', height: '36px', padding: 0, border: 'none', borderRadius: '6px', cursor: 'pointer', background: 'transparent' }}
+                    />
                     <input 
                       type="text" 
                       className="form-control" 
-                      style={{ width: '70px', textTransform: 'uppercase', fontWeight: 'bold' }} 
+                      style={{ width: '60px', textTransform: 'uppercase', fontWeight: 'bold' }} 
                       value={prematchConfig.teamA} 
                       onChange={e => setPrematchConfig({ ...prematchConfig, teamA: e.target.value.toUpperCase() })} 
                     />
@@ -723,12 +848,20 @@ export default function OverlayEditor({ matchState, onBack }) {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginBottom: '4px' }}>Team B Code & Name</label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginBottom: '4px' }}>Team B (Code, Name, Color)</label>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <input 
+                      type="color"
+                      value={prematchConfig.teamBColor}
+                      title="Team B Color"
+                      disabled={!prematchConfig.useTeamColors}
+                      onChange={e => setPrematchConfig({ ...prematchConfig, teamBColor: e.target.value })}
+                      style={{ width: '36px', height: '36px', padding: 0, border: 'none', borderRadius: '6px', cursor: 'pointer', background: 'transparent' }}
+                    />
                     <input 
                       type="text" 
                       className="form-control" 
-                      style={{ width: '70px', textTransform: 'uppercase', fontWeight: 'bold' }} 
+                      style={{ width: '60px', textTransform: 'uppercase', fontWeight: 'bold' }} 
                       value={prematchConfig.teamB} 
                       onChange={e => setPrematchConfig({ ...prematchConfig, teamB: e.target.value.toUpperCase() })} 
                     />

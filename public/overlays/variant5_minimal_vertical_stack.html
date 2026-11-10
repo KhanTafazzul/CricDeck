@@ -125,6 +125,22 @@
       margin-bottom: 30px;
     }
 
+    .team-row:nth-child(1) .team-code-mono {
+      color: var(--team-a-color, #C8FF00);
+      text-shadow: 0 0 20px var(--team-a-color, #C8FF00);
+    }
+    .team-row:nth-child(2) .team-code-mono {
+      color: var(--team-b-color, #00E5FF);
+      text-shadow: 0 0 20px var(--team-b-color, #00E5FF);
+    }
+    .team-row:nth-child(1) .team-logo-square {
+      border: 1px solid var(--team-a-color, #C8FF00);
+      color: var(--team-a-color, #C8FF00);
+    }
+    .team-row:nth-child(2) .team-logo-square {
+      border: 1px solid var(--team-b-color, #00E5FF);
+      color: var(--team-b-color, #00E5FF);
+    }
     .team-row {
       display: flex;
       align-items: center;
@@ -133,6 +149,7 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       padding: 16px 20px;
       border-radius: 8px;
+      transition: all 0.3s ease;
     }
     .team-row-left {
       display: flex;
@@ -297,46 +314,8 @@
     </div>
   </div>
 
+  <script src="overlay_shared.js"></script>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const data = {
-      teamA: params.get('teamA') || 'WI',
-      teamAName: params.get('teamAName') || 'West Indies',
-      teamB: params.get('teamB') || 'BAN',
-      teamBName: params.get('teamBName') || 'Bangladesh',
-      series: params.get('series') || 'SUPER 8 LEAGUE',
-      matchTitle: params.get('title') || 'Match 24',
-      venue: params.get('venue') || 'Kensington Oval, Bridgetown',
-      tossInfo: params.get('toss') || 'Match starts shortly',
-      minutes: parseFloat(params.get('minutes')) || 5.75
-    };
-
-    document.getElementById('seriesLabel').textContent = data.series;
-    document.getElementById('matchTitle').textContent = data.matchTitle;
-    document.getElementById('teamAName').textContent = data.teamAName;
-    document.getElementById('teamACode').textContent = data.teamA;
-    document.getElementById('teamAFallback').textContent = data.teamA;
-    document.getElementById('teamBName').textContent = data.teamBName;
-    document.getElementById('teamBCode').textContent = data.teamB;
-    document.getElementById('teamBFallback').textContent = data.teamB;
-    document.getElementById('venueText').textContent = data.venue;
-    document.getElementById('tossInfo').textContent = data.tossInfo;
-
-    // Countdown
-    let totalSecs = Math.floor(data.minutes * 60);
-    const cdEl = document.getElementById('countdownVal');
-    setInterval(() => {
-      if (totalSecs <= 0) {
-        cdEl.textContent = '00:00';
-        return;
-      }
-      totalSecs--;
-      const m = String(Math.floor(totalSecs / 60)).padStart(2, '0');
-      const s = String(totalSecs % 60).padStart(2, '0');
-      cdEl.textContent = `${m}:${s}`;
-    }, 1000);
-
-    // goLive() transition
     window.goLive = function() {
       const panel = document.getElementById('mainPanel');
       const tag = document.getElementById('liveTag');
@@ -344,16 +323,20 @@
       tag.classList.add('live-mode');
       setTimeout(() => {
         panel.classList.add('exiting');
-      }, 900);
+      }, 700);
     };
 
-    function toggleTestBg() {
-      document.body.classList.toggle('test-bg');
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'b' || e.key === 'B') toggleTestBg();
-      if (e.key === 'l' || e.key === 'L') window.goLive();
+    CricDeckOverlay.init((data) => {
+      document.getElementById('seriesLabel').textContent = data.series;
+      document.getElementById('matchTitle').textContent = data.title;
+      document.getElementById('teamAName').textContent = data.teamAName;
+      document.getElementById('teamACode').textContent = data.teamA;
+      document.getElementById('teamAFallback').textContent = data.teamA;
+      document.getElementById('teamBName').textContent = data.teamBName;
+      document.getElementById('teamBCode').textContent = data.teamB;
+      document.getElementById('teamBFallback').textContent = data.teamB;
+      document.getElementById('venueText').textContent = data.venue;
+      document.getElementById('tossInfo').textContent = data.toss;
     });
   </script>
 </body>

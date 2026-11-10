@@ -76,6 +76,20 @@
     }
 
     /* 160px Square Logo Slot with Fallback (scaled to fit 100px inside 140px bar) */
+    .team-block-a .team-code {
+      color: var(--team-a-color, #111111);
+    }
+    .team-block-b .team-code {
+      color: var(--team-b-color, #E4572E);
+    }
+    .team-block-a .logo-slot {
+      border-color: var(--team-a-color, #D1D1CE);
+      box-shadow: 0 0 16px var(--team-a-color, #D1D1CE);
+    }
+    .team-block-b .logo-slot {
+      border-color: var(--team-b-color, #E4572E);
+      box-shadow: 0 0 16px var(--team-b-color, #E4572E);
+    }
     .logo-slot {
       width: 100px;
       height: 100px;
@@ -87,6 +101,7 @@
       justify-content: center;
       overflow: hidden;
       flex-shrink: 0;
+      transition: all 0.3s ease;
     }
     .logo-slot img {
       width: 100%;
@@ -269,43 +284,8 @@
     </div>
   </div>
 
+  <script src="overlay_shared.js"></script>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const data = {
-      teamA: params.get('teamA') || 'PAK',
-      teamAName: params.get('teamAName') || 'PAKISTAN',
-      teamB: params.get('teamB') || 'SL',
-      teamBName: params.get('teamBName') || 'SRI LANKA',
-      series: params.get('series') || 'Asia Cup 2026',
-      venue: params.get('venue') || 'R. Premadasa Stadium, Colombo',
-      tossInfo: params.get('toss') || 'PAKISTAN WON THE TOSS & ELECTED TO BAT',
-      minutes: parseInt(params.get('minutes')) || 12
-    };
-
-    document.getElementById('teamACode').textContent = data.teamA;
-    document.getElementById('teamAFallback').textContent = data.teamA;
-    document.getElementById('teamAName').textContent = data.teamAName;
-    document.getElementById('teamBCode').textContent = data.teamB;
-    document.getElementById('teamBFallback').textContent = data.teamB;
-    document.getElementById('teamBName').textContent = data.teamBName;
-    document.getElementById('tossInfo').textContent = data.tossInfo;
-    document.getElementById('venueInfo').textContent = `${data.venue} • ${data.series}`;
-
-    // Countdown
-    let totalSecs = data.minutes * 60;
-    const cdEl = document.getElementById('countdownVal');
-    setInterval(() => {
-      if (totalSecs <= 0) {
-        cdEl.textContent = '00:00';
-        return;
-      }
-      totalSecs--;
-      const m = String(Math.floor(totalSecs / 60)).padStart(2, '0');
-      const s = String(totalSecs % 60).padStart(2, '0');
-      cdEl.textContent = `${m}:${s}`;
-    }, 1000);
-
-    // goLive() transition
     window.goLive = function() {
       const bar = document.getElementById('mainTopBar');
       const cd = document.getElementById('cdWidget');
@@ -315,16 +295,18 @@
       if (cd) cd.style.opacity = '0';
       setTimeout(() => {
         bar.classList.add('exiting');
-      }, 900);
+      }, 700);
     };
 
-    function toggleTestBg() {
-      document.body.classList.toggle('test-bg');
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'b' || e.key === 'B') toggleTestBg();
-      if (e.key === 'l' || e.key === 'L') window.goLive();
+    CricDeckOverlay.init((data) => {
+      document.getElementById('teamACode').textContent = data.teamA;
+      document.getElementById('teamAFallback').textContent = data.teamA;
+      document.getElementById('teamAName').textContent = data.teamAName;
+      document.getElementById('teamBCode').textContent = data.teamB;
+      document.getElementById('teamBFallback').textContent = data.teamB;
+      document.getElementById('teamBName').textContent = data.teamBName;
+      document.getElementById('tossInfo').textContent = data.toss;
+      document.getElementById('venueInfo').textContent = `${data.venue} • ${data.series}`;
     });
   </script>
 </body>

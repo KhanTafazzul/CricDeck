@@ -2,203 +2,416 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CricDeck — 6 Pre-Match Broadcast Overlays (ICC Standards)</title>
+  <title>CricDeck — 7 Pre-Match Broadcast Overlays (ICC Standards)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary: #00FF88;
+      --panel-bg: rgba(16, 24, 40, 0.75);
+      --border-color: rgba(255, 255, 255, 0.14);
+    }
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
     body {
-      background: #0B0F19;
+      background: radial-gradient(circle at 15% 15%, rgba(0, 255, 136, 0.06) 0%, transparent 45%),
+                  radial-gradient(circle at 85% 20%, rgba(6, 182, 212, 0.08) 0%, transparent 45%),
+                  #070B14;
       color: #F8FAFC;
       font-family: 'Inter', sans-serif;
       padding: 40px;
       min-height: 100vh;
     }
     .header {
-      max-width: 1200px;
-      margin: 0 auto 36px;
+      max-width: 1300px;
+      margin: 0 auto 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid var(--border-color);
       padding-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
     }
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
     .brand h1 {
-      font-size: 24px;
-      font-weight: 700;
+      font-size: 26px;
+      font-weight: 800;
       letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #FFFFFF 40%, #00FF88 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     .brand-tag {
       background: rgba(0, 255, 136, 0.15);
       border: 1px solid #00FF88;
       color: #00FF88;
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 12px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      box-shadow: 0 0 14px rgba(0, 255, 136, 0.25);
     }
+
+    /* Match & Colors Control Center */
+    .control-center {
+      max-width: 1300px;
+      margin: 0 auto 36px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%), rgba(14, 22, 38, 0.85);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .control-header h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #00FF88;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .control-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr auto;
+      gap: 16px;
+      align-items: end;
+    }
+    @media (max-width: 1024px) {
+      .control-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-control {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #FFFFFF;
+      padding: 9px 12px;
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .form-control:focus {
+      border-color: #00FF88;
+      box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+    }
+    .color-picker-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 5px 8px;
+    }
+    .color-picker-box input[type="color"] {
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 600;
+      color: #E2E8F0;
+    }
+    .toggle-label input {
+      accent-color: #00FF88;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    /* Grid of 7 Cards */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(370px, 1fr));
       gap: 24px;
-      max-width: 1200px;
+      max-width: 1300px;
       margin: 0 auto;
     }
     @keyframes gridEnter {
       0% { opacity: 0; transform: translateY(20px) scale(0.97); }
       100% { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .grid > *:nth-child(1) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
-    .grid > *:nth-child(2) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
-    .grid > *:nth-child(3) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.19s both; }
-    .grid > *:nth-child(4) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.26s both; }
-    .grid > *:nth-child(5) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.33s both; }
-    .grid > *:nth-child(6) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.40s both; }
+    .grid > *:nth-child(1) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both; }
+    .grid > *:nth-child(2) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both; }
+    .grid > *:nth-child(3) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
+    .grid > *:nth-child(4) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both; }
+    .grid > *:nth-child(5) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.20s both; }
+    .grid > *:nth-child(6) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both; }
+    .grid > *:nth-child(7) { animation: gridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.28s both; }
 
     .card {
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%), rgba(16, 24, 40, 0.75);
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 26px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
       transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.35s;
+      position: relative;
+      overflow: hidden;
     }
     .card:hover {
       transform: translateY(-6px) scale(1.01);
-      border-color: rgba(34, 197, 94, 0.45);
-      box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.75), 0 0 24px rgba(34, 197, 94, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      border-color: rgba(0, 255, 136, 0.45);
+      box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.75), 0 0 24px rgba(0, 255, 136, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+    .card.featured {
+      border-color: rgba(0, 255, 136, 0.4);
+      background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%), rgba(16, 24, 40, 0.85);
     }
     .card-top {
       margin-bottom: 20px;
     }
     .card-num {
       font-size: 11px;
-      font-weight: 700;
-      color: #00FF88;
-      letter-spacing: 0.15em;
+      font-weight: 800;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
+      color: #00FF88;
       margin-bottom: 8px;
     }
     .card-title {
       font-size: 20px;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       color: #FFFFFF;
     }
     .card-desc {
       font-size: 13px;
       color: #94A3B8;
       line-height: 1.5;
+      margin-bottom: 18px;
     }
     .card-specs {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-top: 14px;
     }
     .spec-pill {
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 4px 8px;
+      padding: 3px 8px;
       border-radius: 4px;
       font-size: 11px;
       color: #CBD5E1;
-      font-family: monospace;
     }
     .actions {
       display: flex;
       gap: 10px;
-      margin-top: 20px;
-      padding-top: 16px;
+      margin-top: 18px;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 18px;
     }
     .btn {
-      flex: 1;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.2s;
+      border: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .btn-primary {
       background: #00FF88;
-      color: #0B0F19;
-      border: none;
+      color: #070B14;
+      flex: 1;
     }
     .btn-primary:hover {
-      background: #00dd75;
+      background: #33ffa0;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(0, 255, 136, 0.4);
     }
     .btn-secondary {
       background: rgba(255, 255, 255, 0.08);
-      color: #FFFFFF;
+      color: #F8FAFC;
       border: 1px solid rgba(255, 255, 255, 0.15);
+      flex: 1;
     }
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
     }
     .obs-hint {
-      max-width: 1200px;
+      max-width: 1300px;
       margin: 40px auto 0;
-      background: rgba(0, 255, 136, 0.05);
-      border: 1px solid rgba(0, 255, 136, 0.2);
-      border-radius: 8px;
-      padding: 16px 20px;
+      padding: 20px 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
       font-size: 13px;
-      color: #CBD5E1;
+      color: #94A3B8;
       line-height: 1.6;
+    }
+    .obs-hint strong {
+      color: #00FF88;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="brand">
-      <h1>🏏 CricDeck Broadcast Overlays</h1>
-      <span class="brand-tag">ICC Polish Pre-Match Pack</span>
+      <h1>CricDeck OBS Hub</h1>
+      <span class="brand-tag">7 ICC Pre-Match Broadcast Overlays</span>
     </div>
-    <a href="/" class="btn btn-secondary">← Back to CricDeck App</a>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-secondary" onclick="broadcastGoLive()">
+        ⚡ Trigger 'Go Live' in All Active Windows
+      </button>
+      <a href="/" class="btn btn-primary">
+        ← Back to Scorer App
+      </a>
+    </div>
+  </div>
+
+  <!-- Live Match Information & Team Contrast Control Center -->
+  <div class="control-center">
+    <div class="control-header">
+      <h3>
+        <span>📡 Active Match & Dynamic Team Contrast Bar</span>
+      </h3>
+      <label class="toggle-label">
+        <input type="checkbox" id="useTeamColorsCheck" checked onchange="handleParamChange()" />
+        <span>Use Dynamic Team Contrast Colors (Uncheck for Single Unified Palette)</span>
+      </label>
+    </div>
+
+    <div class="control-grid">
+      <!-- Match Selector Dropdown -->
+      <div class="form-group">
+        <label>Select Tournament / Scheduled Match</label>
+        <select class="form-control" id="matchSelector" onchange="handleMatchSelect(this.value)">
+          <option value="custom">-- Custom Match Input --</option>
+        </select>
+      </div>
+
+      <!-- Team A Config -->
+      <div class="form-group">
+        <label>Team A (Code & Color)</label>
+        <div style="display: flex; gap: 6px;">
+          <input type="text" id="teamAInput" class="form-control" style="width: 75px; text-transform: uppercase; font-weight: bold;" value="IND" oninput="handleParamChange()" />
+          <div class="color-picker-box" title="Team A Color">
+            <input type="color" id="teamAColorInput" value="#0047AB" onchange="handleParamChange()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Team B Config -->
+      <div class="form-group">
+        <label>Team B (Code & Color)</label>
+        <div style="display: flex; gap: 6px;">
+          <input type="text" id="teamBInput" class="form-control" style="width: 75px; text-transform: uppercase; font-weight: bold;" value="AUS" oninput="handleParamChange()" />
+          <div class="color-picker-box" title="Team B Color">
+            <input type="color" id="teamBColorInput" value="#F5B800" onchange="handleParamChange()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Countdown Minutes -->
+      <div class="form-group">
+        <label>Countdown (Mins)</label>
+        <input type="number" id="minutesInput" class="form-control" value="15" min="1" max="180" oninput="handleParamChange()" />
+      </div>
+
+      <!-- Sync Button -->
+      <button class="btn btn-primary" onclick="syncAllOverlaysNow()" style="height: 38px;">
+        🔄 Sync All Overlays Live
+      </button>
+    </div>
   </div>
 
   <div class="grid">
+    <!-- Variant 7 (Featured New Variant) -->
+    <div class="card featured">
+      <div class="card-top">
+        <div class="card-num">Variant 7 • New Broadcast HUD</div>
+        <div class="card-title">Arena Matchup HUD</div>
+        <div class="card-desc">
+          Dual 3D-angled glass battle panels (skew -8deg) with dynamic team contrast glow, central holographic status bridge, and neon digital countdown.
+        </div>
+        <div class="card-specs">
+          <span class="spec-pill">Barlow Condensed 800</span>
+          <span class="spec-pill">JetBrains Mono 700</span>
+          <span class="spec-pill">Team Contrast Glow</span>
+          <span class="spec-pill">3D Perspective Glide 680ms</span>
+        </div>
+      </div>
+      <div class="actions">
+        <a href="/overlays/variant7_arena_matchup_hud.html" target="_blank" class="btn btn-primary overlay-link" data-file="variant7_arena_matchup_hud.html">Open Overlay</a>
+        <button class="btn btn-secondary" onclick="copyObsUrl('variant7_arena_matchup_hud.html')">Copy OBS URL</button>
+      </div>
+    </div>
+
     <!-- Variant 1 -->
     <div class="card">
       <div class="card-top">
         <div class="card-num">Variant 1</div>
         <div class="card-title">Broadcast Lower Third</div>
         <div class="card-desc">
-          Angled skew bars (-12deg) anchored bottom-left (760x120px) with team stripes, countdown, and PRE-MATCH/LIVE status badge.
+          Two angled bars (skewX -12deg) side by side with team colour stripes, match title above, countdown timer, and PRE-MATCH status tag.
         </div>
         <div class="card-specs">
-          <span class="spec-pill">Barlow Condensed 800</span>
+          <span class="spec-pill">Barlow Condensed 800 italic</span>
           <span class="spec-pill">Inter 500</span>
-          <span class="spec-pill">#0B1A33 / #F5B800 / #E63946</span>
-          <span class="spec-pill">Slide In Left</span>
+          <span class="spec-pill">Team A / B Stripes</span>
+          <span class="spec-pill">Slide In 650ms</span>
         </div>
       </div>
       <div class="actions">
-        <a href="/overlays/variant1_broadcast_lower_third.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <a href="/overlays/variant1_broadcast_lower_third.html" target="_blank" class="btn btn-primary overlay-link" data-file="variant1_broadcast_lower_third.html">Open Overlay</a>
         <button class="btn btn-secondary" onclick="copyObsUrl('variant1_broadcast_lower_third.html')">Copy OBS URL</button>
       </div>
     </div>
@@ -209,17 +422,17 @@
         <div class="card-num">Variant 2</div>
         <div class="card-title">Centered Versus Card</div>
         <div class="card-desc">
-          Centered 1100x460px high-contrast card with 180px circular logo frames, hairline divider, accent cyan highlights, and bottom venue/date.
+          Centered 1100x460px high-contrast card with 180px circular logo frames, hairline divider, and team accent highlights.
         </div>
         <div class="card-specs">
           <span class="spec-pill">Oswald 700 & 300</span>
           <span class="spec-pill">Inter 400</span>
-          <span class="spec-pill">#101820 to #1E2D3D</span>
-          <span class="spec-pill">Scale Fade In</span>
+          <span class="spec-pill">Team Contrast Borders</span>
+          <span class="spec-pill">Scale & Fade 600ms</span>
         </div>
       </div>
       <div class="actions">
-        <a href="/overlays/variant2_centered_versus_card.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <a href="/overlays/variant2_centered_versus_card.html" target="_blank" class="btn btn-primary overlay-link" data-file="variant2_centered_versus_card.html">Open Overlay</a>
         <button class="btn btn-secondary" onclick="copyObsUrl('variant2_centered_versus_card.html')">Copy OBS URL</button>
       </div>
     </div>
@@ -235,12 +448,12 @@
         <div class="card-specs">
           <span class="spec-pill">Archivo Black 180px</span>
           <span class="spec-pill">Archivo 600</span>
-          <span class="spec-pill">#0047AB / #FF6B2C</span>
+          <span class="spec-pill">Team Contrast Panels</span>
           <span class="spec-pill">Dual Wipe 700ms</span>
         </div>
       </div>
       <div class="actions">
-        <a href="/overlays/variant3_split_diagonal.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <a href="/overlays/variant3_split_diagonal.html" target="_blank" class="btn btn-primary overlay-link" data-file="variant3_split_diagonal.html">Open Overlay</a>
         <button class="btn btn-secondary" onclick="copyObsUrl('variant3_split_diagonal.html')">Copy OBS URL</button>
       </div>
     </div>
@@ -251,17 +464,17 @@
         <div class="card-num">Variant 4</div>
         <div class="card-title">Top Bar Preview</div>
         <div class="card-desc">
-          Full-width architectural top ribbon 1920x140px with crisp warm-gray background, team logo slots, toss info center, and 4px orange underline.
+          Full-width architectural top ribbon 1920x140px with crisp warm-gray background, team logo slots, toss info center, and team accent underline.
         </div>
         <div class="card-specs">
           <span class="spec-pill">Space Grotesk 600</span>
           <span class="spec-pill">16px Uppercase</span>
-          <span class="spec-pill">#F2F2F0 / #E4572E</span>
+          <span class="spec-pill">#F2F2F0 / Team Underlines</span>
           <span class="spec-pill">Drop Down 400ms</span>
         </div>
       </div>
       <div class="actions">
-        <a href="/overlays/variant4_top_bar_preview.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <a href="/overlays/variant4_top_bar_preview.html" target="_blank" class="btn btn-primary overlay-link" data-file="variant4_top_bar_preview.html">Open Overlay</a>
         <button class="btn btn-secondary" onclick="copyObsUrl('variant4_top_bar_preview.html')">Copy OBS URL</button>
       </div>
     </div>
@@ -277,12 +490,12 @@
         <div class="card-specs">
           <span class="spec-pill">Inter 700 & 500</span>
           <span class="spec-pill">JetBrains Mono 500</span>
-          <span class="spec-pill">#0A0A0A / #C8FF00</span>
+          <span class="spec-pill">Team Glowing Digits</span>
           <span class="spec-pill">80ms Staggered Rise</span>
         </div>
       </div>
       <div class="actions">
-        <a href="/overlays/variant5_minimal_vertical_stack.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <a href="/overlays/variant5_minimal_vertical_stack.html" target="_blank" class="btn btn-primary overlay-link" data-file="variant5_minimal_vertical_stack.html">Open Overlay</a>
         <button class="btn btn-secondary" onclick="copyObsUrl('variant5_minimal_vertical_stack.html')">Copy OBS URL</button>
       </div>
     </div>
@@ -298,29 +511,170 @@
         <div class="card-specs">
           <span class="spec-pill">Sora 600 & 700</span>
           <span class="spec-pill">Glassmorphism Blur 18px</span>
-          <span class="spec-pill">#7C5CFF to #22D3EE</span>
+          <span class="spec-pill">Team Circular Halos</span>
           <span class="spec-pill">120ms Staggered Rise</span>
         </div>
       </div>
       <div class="actions">
-        <a href="/overlays/variant6_floating_glass_pills.html" target="_blank" class="btn btn-primary">Open Overlay</a>
+        <a href="/overlays/variant6_floating_glass_pills.html" target="_blank" class="btn btn-primary overlay-link" data-file="variant6_floating_glass_pills.html">Open Overlay</a>
         <button class="btn btn-secondary" onclick="copyObsUrl('variant6_floating_glass_pills.html')">Copy OBS URL</button>
       </div>
     </div>
   </div>
 
   <div class="obs-hint">
-    <strong>💡 OBS Studio Setup:</strong> In OBS, click <em>Sources (+) → Browser</em>, set Width: <code>1920</code>, Height: <code>1080</code>, check <em>Shutdown source when not visible</em>. Paste any overlay URL. Press <strong>'B'</strong> in any overlay window to toggle dark test mode; press <strong>'L'</strong> or click <em>Trigger Go Live</em> to test the smooth transition into match play.
+    <strong>💡 OBS Studio Setup:</strong> In OBS, click <em>Sources (+) → Browser</em>, set Width: <code>1920</code>, Height: <code>1080</code>, check <em>Shutdown source when not visible</em>. When you switch matches or change team colors above, click <strong>"Sync All Overlays Live"</strong> and all open browser sources will immediately adapt in real-time. Press <strong>'B'</strong> in any overlay window to toggle dark test mode; press <strong>'L'</strong> to trigger the smooth transition into match play.
   </div>
 
   <script>
-    function copyObsUrl(file) {
-      const url = window.location.origin + '/overlays/' + file;
-      navigator.clipboard.writeText(url).then(() => {
-        alert('Copied OBS Browser Source URL to clipboard:\n' + url);
+    let scheduledMatches = [];
+
+    function initHub() {
+      loadTournamentMatches();
+      updateAllLinks();
+    }
+
+    function loadTournamentMatches() {
+      const selector = document.getElementById('matchSelector');
+      try {
+        const raw = localStorage.getItem('cricdeck_tournaments');
+        if (raw) {
+          const tournaments = JSON.parse(raw);
+          tournaments.forEach(t => {
+            (t.matches || []).forEach(m => {
+              scheduledMatches.push({ ...m, tournament: t });
+              const opt = document.createElement('option');
+              opt.value = m.id;
+              opt.textContent = `${t.name}: ${m.team_a} vs ${m.team_b} (${m.overs_quota} Ov)`;
+              selector.appendChild(opt);
+            });
+          });
+        }
+      } catch (_) {}
+
+      // Also check active match state
+      try {
+        const rawLive = localStorage.getItem('cricdeck_match_state');
+        if (rawLive) {
+          const ms = JSON.parse(rawLive);
+          const liveOpt = document.createElement('option');
+          liveOpt.value = 'live_active';
+          liveOpt.textContent = `🔴 Live Active: ${ms.team_a} vs ${ms.team_b}`;
+          selector.insertBefore(liveOpt, selector.firstChild.nextSibling);
+        }
+      } catch (_) {}
+    }
+
+    function handleMatchSelect(matchId) {
+      if (matchId === 'custom') return;
+      
+      if (matchId === 'live_active') {
+        try {
+          const ms = JSON.parse(localStorage.getItem('cricdeck_match_state'));
+          document.getElementById('teamAInput').value = (ms.team_a || 'TMA').substring(0, 3).toUpperCase();
+          document.getElementById('teamBInput').value = (ms.team_b || 'TMB').substring(0, 3).toUpperCase();
+          handleParamChange();
+          return;
+        } catch (_) {}
+      }
+
+      const match = scheduledMatches.find(m => m.id === matchId);
+      if (!match) return;
+
+      const tA = match.tournament?.teams?.find(t => t.id === match.team_a_id);
+      const tB = match.tournament?.teams?.find(t => t.id === match.team_b_id);
+
+      document.getElementById('teamAInput').value = tA?.code || (match.team_a || 'TMA').substring(0, 3).toUpperCase();
+      document.getElementById('teamAColorInput').value = tA?.primary_color || '#0047AB';
+      document.getElementById('teamBInput').value = tB?.code || (match.team_b || 'TMB').substring(0, 3).toUpperCase();
+      document.getElementById('teamBColorInput').value = tB?.primary_color || '#F5B800';
+
+      handleParamChange();
+    }
+
+    function getActiveQueryParams() {
+      const teamA = document.getElementById('teamAInput').value || 'IND';
+      const teamAColor = document.getElementById('teamAColorInput').value || '#0047AB';
+      const teamB = document.getElementById('teamBInput').value || 'AUS';
+      const teamBColor = document.getElementById('teamBColorInput').value || '#F5B800';
+      const useTeamColors = document.getElementById('useTeamColorsCheck').checked ? '1' : '0';
+      const minutes = document.getElementById('minutesInput').value || '15';
+
+      return new URLSearchParams({
+        teamA,
+        teamAName: teamA,
+        teamAColor,
+        teamB,
+        teamBName: teamB,
+        teamBColor,
+        useTeamColors,
+        minutes
+      }).toString();
+    }
+
+    function updateAllLinks() {
+      const q = getActiveQueryParams();
+      document.querySelectorAll('.overlay-link').forEach(link => {
+        const file = link.getAttribute('data-file');
+        link.href = `/overlays/${file}?${q}`;
       });
     }
+
+    function handleParamChange() {
+      updateAllLinks();
+      syncAllOverlaysNow(false);
+    }
+
+    function syncAllOverlaysNow(showAlert = true) {
+      const teamA = document.getElementById('teamAInput').value || 'IND';
+      const teamAColor = document.getElementById('teamAColorInput').value || '#0047AB';
+      const teamB = document.getElementById('teamBInput').value || 'AUS';
+      const teamBColor = document.getElementById('teamBColorInput').value || '#F5B800';
+      const useTeamColors = document.getElementById('useTeamColorsCheck').checked;
+      const minutes = parseInt(document.getElementById('minutesInput').value) || 15;
+
+      const payload = {
+        teamACode: teamA,
+        teamAName: teamA,
+        teamAColor,
+        teamBCode: teamB,
+        teamBName: teamB,
+        teamBColor,
+        useTeamColors,
+        minutes
+      };
+
+      try {
+        localStorage.setItem('cricdeck_overlay_shared_data', JSON.stringify(payload));
+        const bc = new BroadcastChannel('cricdeck_overlay_sync');
+        bc.postMessage({ type: 'MATCH_UPDATE', data: payload });
+        bc.close();
+        if (showAlert) alert('✓ Successfully broadcasted match data and team contrast colors to all active overlays!');
+      } catch (e) {
+        console.warn('Sync error:', e);
+      }
+    }
+
+    function broadcastGoLive() {
+      try {
+        const bc = new BroadcastChannel('cricdeck_overlay_sync');
+        bc.postMessage({ type: 'GO_LIVE' });
+        bc.close();
+        alert('⚡ Broadcasted "GO LIVE" trigger to all active overlay windows!');
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    function copyObsUrl(file) {
+      const q = getActiveQueryParams();
+      const url = `${window.location.origin}/overlays/${file}?${q}`;
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Copied OBS Browser Source URL with team contrast to clipboard:\n' + url);
+      });
+    }
+
+    initHub();
   </script>
 </body>
 </html>
-

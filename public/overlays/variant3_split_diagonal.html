@@ -40,7 +40,7 @@
       left: 0;
       width: 1920px;
       height: 1080px;
-      background: #0047AB;
+      background: var(--team-a-color, #0047AB);
       clip-path: polygon(0 0, 100% 0, 0 100%);
       transform: translateY(0);
       animation: wipeInTop 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -53,7 +53,7 @@
       left: 0;
       width: 1920px;
       height: 1080px;
-      background: #FF6B2C;
+      background: var(--team-b-color, #FF6B2C);
       clip-path: polygon(100% 0, 100% 100%, 0 100%);
       transform: translateY(0);
       animation: wipeInBottom 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -325,59 +325,26 @@
     </div>
   </div>
 
+  <script src="overlay_shared.js"></script>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const data = {
-      teamA: params.get('teamA') || 'SA',
-      teamAName: params.get('teamAName') || 'SOUTH AFRICA',
-      teamB: params.get('teamB') || 'NZ',
-      teamBName: params.get('teamBName') || 'NEW ZEALAND',
-      series: params.get('series') || 'ICC World Tour',
-      matchTitle: params.get('title') || 'MATCH 05',
-      venue: params.get('venue') || 'Eden Park, Auckland',
-      minutes: parseInt(params.get('minutes')) || 8.5
-    };
-
-    document.getElementById('teamAName').textContent = data.teamAName;
-    document.getElementById('teamACode').textContent = data.teamA;
-    document.getElementById('teamABigCode').textContent = data.teamA;
-    document.getElementById('teamBName').textContent = data.teamBName;
-    document.getElementById('teamBCode').textContent = data.teamB;
-    document.getElementById('teamBBigCode').textContent = data.teamB;
-    document.getElementById('matchTitle').textContent = data.matchTitle;
-    document.getElementById('venueInfo').textContent = `${data.venue} • ${data.series}`;
-
-    // Countdown
-    let totalSecs = Math.floor(data.minutes * 60);
-    const cdEl = document.getElementById('countdownVal');
-    setInterval(() => {
-      if (totalSecs <= 0) {
-        cdEl.textContent = '00:00';
-        return;
-      }
-      totalSecs--;
-      const m = String(Math.floor(totalSecs / 60)).padStart(2, '0');
-      const s = String(totalSecs % 60).padStart(2, '0');
-      cdEl.textContent = `${m}:${s}`;
-    }, 1000);
-
-    // goLive() transition
     window.goLive = function() {
       const tag = document.getElementById('liveTag');
       tag.textContent = 'LIVE NOW';
-      tag.style.color = '#0047AB';
+      tag.style.color = 'var(--team-a-color, #0047AB)';
       setTimeout(() => {
         document.getElementById('viewport').classList.add('exiting');
-      }, 900);
+      }, 700);
     };
 
-    function toggleTestBg() {
-      document.body.classList.toggle('test-bg');
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'b' || e.key === 'B') toggleTestBg();
-      if (e.key === 'l' || e.key === 'L') window.goLive();
+    CricDeckOverlay.init((data) => {
+      document.getElementById('teamAName').textContent = data.teamAName;
+      document.getElementById('teamACode').textContent = data.teamA;
+      document.getElementById('teamABigCode').textContent = data.teamA;
+      document.getElementById('teamBName').textContent = data.teamBName;
+      document.getElementById('teamBCode').textContent = data.teamB;
+      document.getElementById('teamBBigCode').textContent = data.teamB;
+      document.getElementById('matchTitle').textContent = data.title;
+      document.getElementById('venueInfo').textContent = `${data.venue} • ${data.series}`;
     });
   </script>
 </body>

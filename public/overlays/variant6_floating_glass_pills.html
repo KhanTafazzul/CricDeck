@@ -98,6 +98,22 @@
     }
 
     /* Team Content */
+    .pill-team-a .team-avatar {
+      border-color: var(--team-a-color, #22D3EE);
+      box-shadow: 0 0 20px var(--team-a-color, #22D3EE);
+    }
+    .pill-team-b .team-avatar {
+      border-color: var(--team-b-color, #7C5CFF);
+      box-shadow: 0 0 20px var(--team-b-color, #7C5CFF);
+    }
+    .pill-team-a .team-subcode {
+      color: var(--team-a-color, #22D3EE);
+      font-weight: 700;
+    }
+    .pill-team-b .team-subcode {
+      color: var(--team-b-color, #7C5CFF);
+      font-weight: 700;
+    }
     .team-avatar {
       width: 68px;
       height: 68px;
@@ -112,6 +128,7 @@
       color: #FFFFFF;
       overflow: hidden;
       flex-shrink: 0;
+      transition: all 0.3s ease;
     }
     .team-avatar img {
       width: 100%;
@@ -285,43 +302,8 @@
     </div>
   </div>
 
+  <script src="overlay_shared.js"></script>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const data = {
-      teamA: params.get('teamA') || 'CSK',
-      teamAName: params.get('teamAName') || 'Chennai',
-      teamB: params.get('teamB') || 'MI',
-      teamBName: params.get('teamBName') || 'Mumbai',
-      series: params.get('series') || 'Premier League 2026',
-      matchTitle: params.get('title') || 'Finals Blockbuster',
-      venue: params.get('venue') || 'Chepauk Stadium, Chennai',
-      minutes: parseFloat(params.get('minutes')) || 9.25
-    };
-
-    document.getElementById('teamAName').textContent = data.teamAName;
-    document.getElementById('teamACode').textContent = data.teamA;
-    document.getElementById('teamAFallback').textContent = data.teamA;
-    document.getElementById('teamBName').textContent = data.teamBName;
-    document.getElementById('teamBCode').textContent = data.teamB;
-    document.getElementById('teamBFallback').textContent = data.teamB;
-    document.getElementById('matchInfo').textContent = `${data.matchTitle} — ${data.series}`;
-    document.getElementById('venueInfo').textContent = data.venue;
-
-    // Countdown
-    let totalSecs = Math.floor(data.minutes * 60);
-    const cdEl = document.getElementById('countdownVal');
-    setInterval(() => {
-      if (totalSecs <= 0) {
-        cdEl.textContent = '00:00';
-        return;
-      }
-      totalSecs--;
-      const m = String(Math.floor(totalSecs / 60)).padStart(2, '0');
-      const s = String(totalSecs % 60).padStart(2, '0');
-      cdEl.textContent = `${m}:${s}`;
-    }, 1000);
-
-    // goLive() transition
     window.goLive = function() {
       const container = document.getElementById('pillsContainer');
       const card = document.getElementById('matchCard');
@@ -339,16 +321,18 @@
           card.style.transform = 'translateX(-50%) translateY(20px)';
           card.style.transition = 'all 0.4s ease';
         }
-      }, 900);
+      }, 700);
     };
 
-    function toggleTestBg() {
-      document.body.classList.toggle('test-bg');
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'b' || e.key === 'B') toggleTestBg();
-      if (e.key === 'l' || e.key === 'L') window.goLive();
+    CricDeckOverlay.init((data) => {
+      document.getElementById('teamAName').textContent = data.teamAName;
+      document.getElementById('teamACode').textContent = data.teamA;
+      document.getElementById('teamAFallback').textContent = data.teamA;
+      document.getElementById('teamBName').textContent = data.teamBName;
+      document.getElementById('teamBCode').textContent = data.teamB;
+      document.getElementById('teamBFallback').textContent = data.teamB;
+      document.getElementById('matchInfo').textContent = `${data.title} — ${data.series}`;
+      document.getElementById('venueInfo').textContent = data.venue;
     });
   </script>
 </body>

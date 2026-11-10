@@ -150,10 +150,12 @@
       border-radius: 4px;
     }
     .skew-bar.team-a {
-      background: #F5B800;
+      background: var(--team-a-color, #F5B800);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
     .skew-bar.team-b {
-      background: #E63946;
+      background: var(--team-b-color, #E63946);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
     .unskew {
       transform: skewX(12deg);
@@ -294,42 +296,8 @@
     </div>
   </div>
 
+  <script src="overlay_shared.js"></script>
   <script>
-    // URL or state placeholder values
-    const params = new URLSearchParams(window.location.search);
-    const data = {
-      teamA: params.get('teamA') || 'IND',
-      teamAName: params.get('teamAName') || 'India',
-      teamB: params.get('teamB') || 'AUS',
-      teamBName: params.get('teamBName') || 'Australia',
-      matchTitle: params.get('title') || 'ICC Champions Trophy • Match 12',
-      series: params.get('series') || 'Finals',
-      venue: params.get('venue') || 'Dubai International Cricket Stadium',
-      countdownMinutes: parseInt(params.get('minutes')) || 15
-    };
-
-    // Hydrate placeholders
-    document.getElementById('teamACode').textContent = data.teamA;
-    document.getElementById('teamBCode').textContent = data.teamB;
-    document.getElementById('matchTitle').textContent = data.matchTitle;
-    document.getElementById('venueText').textContent = data.venue;
-
-    // Countdown logic
-    let totalSeconds = data.countdownMinutes * 60;
-    const countdownEl = document.getElementById('countdownVal');
-    const timer = setInterval(() => {
-      if (totalSeconds <= 0) {
-        countdownEl.textContent = '00:00';
-        clearInterval(timer);
-        return;
-      }
-      totalSeconds--;
-      const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-      const secs = String(totalSeconds % 60).padStart(2, '0');
-      countdownEl.textContent = `${mins}:${secs}`;
-    }, 1000);
-
-    // goLive() transition requirement
     window.goLive = function() {
       const panel = document.getElementById('mainPanel');
       const tag = document.getElementById('liveTag');
@@ -338,16 +306,14 @@
 
       setTimeout(() => {
         panel.classList.add('exiting');
-      }, 1000);
+      }, 700);
     };
 
-    function toggleTestBg() {
-      document.body.classList.toggle('test-bg');
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'b' || e.key === 'B') toggleTestBg();
-      if (e.key === 'l' || e.key === 'L') window.goLive();
+    CricDeckOverlay.init((data) => {
+      document.getElementById('teamACode').textContent = data.teamA;
+      document.getElementById('teamBCode').textContent = data.teamB;
+      document.getElementById('matchTitle').textContent = data.title;
+      document.getElementById('venueText').textContent = data.venue;
     });
   </script>
 </body>

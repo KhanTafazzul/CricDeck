@@ -128,6 +128,7 @@ function App() {
   const [runsCompleted, setRunsCompleted] = useState(0);
   const [fielderName, setFielderName] = useState('');
   const [keeperName, setKeeperName] = useState('');
+  const [isLastBatter, setIsLastBatter] = useState(false);
 
   // New bowler modal state
   const [nextBowlerName, setNextBowlerName] = useState('');
@@ -315,6 +316,38 @@ function App() {
       } catch (e) {
         console.warn('BroadcastChannel error:', e);
       }
+
+      // Sync active match data to ICC overlays
+      try {
+        const activeTourn = tournaments.find(t => t.id === matchState.tournament_id);
+        const teamAObj = activeTourn?.teams?.find(t => t.id === matchState.team_a_id);
+        const teamBObj = activeTourn?.teams?.find(t => t.id === matchState.team_b_id);
+
+        const overlayData = {
+          teamAName: matchState.team_a || 'TEAM A',
+          teamACode: teamAObj?.code || (matchState.team_a || 'TMA').substring(0, 3).toUpperCase(),
+          teamALogo: teamAObj?.logo_data || '',
+          teamAColor: teamAObj?.primary_color || '#0047AB',
+          teamBName: matchState.team_b || 'TEAM B',
+          teamBCode: teamBObj?.code || (matchState.team_b || 'TMB').substring(0, 3).toUpperCase(),
+          teamBLogo: teamBObj?.logo_data || '',
+          teamBColor: teamBObj?.primary_color || '#E63946',
+          matchTitle: activeTourn ? `${activeTourn.name.toUpperCase()} • MATCH` : 'LIVE CRICKET MATCH',
+          series: activeTourn?.name || "CRICDECK CHAMPIONSHIP SERIES",
+          venue: matchState.venue || "INTERNATIONAL CRICKET STADIUM",
+          oversQuota: matchState.overs_quota || 20,
+          tossInfo: matchState.toss_winner ? `${matchState.toss_winner.toUpperCase()} WON TOSS & ELECTED TO ${matchState.elected_to.toUpperCase()} FIRST` : 'TOSS TO TAKE PLACE SHORTLY',
+          startTime: matchState.match_date || new Date().toLocaleDateString(),
+          status: matchState.status
+        };
+
+        localStorage.setItem('cricdeck_overlay_shared_data', JSON.stringify(overlayData));
+        const overlayChannel = new BroadcastChannel('cricdeck_overlay_sync');
+        overlayChannel.postMessage({ type: 'MATCH_UPDATE', data: overlayData });
+        overlayChannel.close();
+      } catch (e) {
+        // ignore
+      }
     } else {
       try {
         localStorage.removeItem('cricdeck_match_state');
@@ -490,11 +523,17 @@ function App() {
     setRunsCompleted(0);
     setFielderName('');
     setKeeperName('');
+
+    // Automatically check if all available batters are dismissed or wickets >= 9
+    const avail = getAvailableBatters();
+    const autoLast = (matchState.tournament_id ? avail.length === 0 : (matchState.wickets || 0) >= 9);
+    setIsLastBatter(autoLast);
     setShowWicketModal(true);
   };
 
   const submitWicket = () => {
-    if (!matchState || !newBatterName.trim()) return;
+    if (!matchState) return;
+    if (!isLastBatter && !newBatterName.trim()) return;
     
     if (wicketType === 'caught' && !fielderName.trim()) {
       alert('Please specify who took the catch.');
@@ -509,13 +548,26 @@ function App() {
       type: 'WICKET',
       wicketType,
       dismissedBatterName: dismissedBatter,
-      newBatterName: newBatterName.trim(),
+      newBatterName: isLastBatter ? 'All Out' : newBatterName.trim(),
       runsCompleted: parseInt(runsCompleted) || 0,
       fielderName: wicketType === 'caught' ? fielderName.trim() : null,
-      keeperName: (wicketType === 'stumped' || wicketType === 'caught_behind') ? keeperName.trim() : null
+      keeperName: (wicketType === 'stumped' || wicketType === 'caught_behind') ? keeperName.trim() : null,
+      isAllOut: isLastBatter
     };
+
     applyAction(action);
     setShowWicketModal(false);
+
+    // If last batter / all-out, smoothly end the innings or match
+    if (isLastBatter) {
+      setTimeout(() => {
+        if (matchState.current_innings === 1) {
+          handleEndInnings();
+        } else {
+          handleFinishMatch();
+        }
+      }, 400);
+    }
   };
 
   const handleUndo = () => {
@@ -533,7 +585,7 @@ function App() {
     setMatchState(prev => {
       if (!prev) return prev;
       const nextState = processDelivery(prev, action);
-      const isOverComplete = nextState.balls_in_over === 0 && (
+      const isOverComplete = !action.isAllOut && nextState.balls_in_over === 0 && (
         action.type === 'RUNS' || 
         action.type === 'BYES' || 
         action.type === 'LEG_BYES' || 
@@ -1961,34 +2013,60 @@ function App() {
                   </div>
                 )}
 
-                {/* Squad Roster smart dropdown selection */}
-                {matchState.tournament_id ? (
-                  <div className="form-group">
-                    <label>Select Incoming Batter</label>
-                    <select 
-                      className="form-control select-control"
-                      value={newBatterName}
-                      onChange={e => setNewBatterName(e.target.value)}
-                      required
-                    >
-                      <option value="">-- Select Batter --</option>
-                      {getAvailableBatters().map(p => (
-                        <option key={p.id} value={p.name}>{p.name} ({p.role})</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="form-group">
-                    <label>New Batter Name</label>
+                {/* Last Batter / All Out Detection Option */}
+                <div style={{ 
+                  margin: '1rem 0', 
+                  padding: '0.85rem 1rem', 
+                  background: isLastBatter ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.04)', 
+                  border: isLastBatter ? '1px solid rgba(239, 68, 68, 0.45)' : '1px solid rgba(255, 255, 255, 0.08)', 
+                  borderRadius: '10px' 
+                }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 650, color: isLastBatter ? '#fca5a5' : '#f8fafc' }}>
                     <input 
-                      type="text" 
-                      className="form-control" 
-                      value={newBatterName}
-                      onChange={e => setNewBatterName(e.target.value)}
-                      placeholder="Enter incoming batter's name"
-                      required
+                      type="checkbox" 
+                      checked={isLastBatter} 
+                      onChange={e => setIsLastBatter(e.target.checked)} 
+                      style={{ width: '18px', height: '18px', accentColor: '#ef4444', cursor: 'pointer' }}
                     />
-                  </div>
+                    <span>⚡ Last Batter / Team All Out (Innings Complete)</span>
+                  </label>
+                  {isLastBatter && (
+                    <p style={{ fontSize: '0.82rem', color: '#fca5a5', marginTop: '6px', marginLeft: '28px', lineHeight: 1.4 }}>
+                      Batting team is all out. No next batter required — this will record the dismissal and conclude the innings.
+                    </p>
+                  )}
+                </div>
+
+                {/* Squad Roster smart dropdown selection (only if NOT last batter) */}
+                {!isLastBatter && (
+                  matchState.tournament_id ? (
+                    <div className="form-group">
+                      <label>Select Incoming Batter</label>
+                      <select 
+                        className="form-control select-control"
+                        value={newBatterName}
+                        onChange={e => setNewBatterName(e.target.value)}
+                        required
+                      >
+                        <option value="">-- Select Batter --</option>
+                        {getAvailableBatters().map(p => (
+                          <option key={p.id} value={p.name}>{p.name} ({p.role})</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="form-group">
+                      <label>New Batter Name</label>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        value={newBatterName}
+                        onChange={e => setNewBatterName(e.target.value)}
+                        placeholder="Enter incoming batter's name"
+                        required
+                      />
+                    </div>
+                  )
                 )}
               </div>
               <div className="modal-footer">
@@ -1996,11 +2074,11 @@ function App() {
                   Cancel
                 </button>
                 <button 
-                  className="btn btn-primary" 
+                  className={isLastBatter ? "btn btn-danger" : "btn btn-primary"} 
                   onClick={submitWicket}
-                  disabled={!newBatterName.trim()}
+                  disabled={!isLastBatter && !newBatterName.trim()}
                 >
-                  Apply Wicket
+                  {isLastBatter ? "Dismiss Last Batter & End Innings" : "Apply Wicket"}
                 </button>
               </div>
             </div>

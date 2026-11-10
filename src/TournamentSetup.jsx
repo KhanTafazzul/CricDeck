@@ -14,8 +14,8 @@ export default function TournamentSetup({ onComplete, onCancel }) {
   });
 
   const [teams, setTeams] = useState([
-    { id: '1', name: 'Mumbai Indians', logo_data: '', players: [] },
-    { id: '2', name: 'Chennai Super Kings', logo_data: '', players: [] }
+    { id: '1', name: 'Mumbai Indians', code: 'MI', primary_color: '#0047AB', logo_data: '', players: [] },
+    { id: '2', name: 'Chennai Super Kings', code: 'CSK', primary_color: '#F5B800', logo_data: '', players: [] }
   ]);
 
   const [activeTeamIndex, setActiveTeamIndex] = useState(0);
@@ -49,10 +49,15 @@ export default function TournamentSetup({ onComplete, onCancel }) {
     }
   };
 
+  const TEAM_COLORS = ['#0047AB', '#F5B800', '#E63946', '#16A34A', '#06B6D4', '#A855F7', '#F97316', '#EC4899'];
+
   const handleAddTeam = () => {
+    const idx = teams.length;
     setTeams([...teams, { 
       id: Math.random().toString(), 
-      name: `Team ${teams.length + 1}`, 
+      name: `Team ${idx + 1}`, 
+      code: `T${idx + 1}`,
+      primary_color: TEAM_COLORS[idx % TEAM_COLORS.length],
       logo_data: '', 
       players: [] 
     }]);
@@ -230,18 +235,44 @@ export default function TournamentSetup({ onComplete, onCancel }) {
                   </label>
                 </div>
 
-                <div className="team-name-input-wrapper">
+                <div className="team-name-input-wrapper" style={{ display: 'flex', gap: '8px', flex: 1, alignItems: 'center' }}>
                   <input 
                     type="text" 
                     className="form-control" 
                     value={team.name}
                     placeholder="Enter Team Name"
+                    style={{ flex: 2 }}
                     onChange={e => {
                       const updated = [...teams];
                       updated[idx].name = e.target.value;
                       setTeams(updated);
                     }}
                   />
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={team.code || ''}
+                    placeholder="CODE (e.g. IND)"
+                    maxLength={4}
+                    style={{ width: '85px', textTransform: 'uppercase', fontWeight: 'bold', textAlign: 'center' }}
+                    onChange={e => {
+                      const updated = [...teams];
+                      updated[idx].code = e.target.value.toUpperCase();
+                      setTeams(updated);
+                    }}
+                  />
+                  <div title="Team Broadcast Accent Color" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <input 
+                      type="color" 
+                      value={team.primary_color || '#0047AB'}
+                      onChange={e => {
+                        const updated = [...teams];
+                        updated[idx].primary_color = e.target.value;
+                        setTeams(updated);
+                      }}
+                      style={{ width: '38px', height: '38px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'transparent' }}
+                    />
+                  </div>
                 </div>
 
                 <button 
